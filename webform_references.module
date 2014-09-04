@@ -1,0 +1,202 @@
+<?php
+
+/**
+ * @file
+ * Webform module node reference component.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function webform_references_menu() {
+  $items['webform_references/autocomplete/%'] = array(
+    'page callback' => 'webform_references_autocomplete',
+    'page arguments' => array(2),
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+  /** Implementation of hook_webform_component_info(). */
+ 
+  function webform_references_webform_component_info() {
+    $components = array();
+    $components['node_reference'] = array(
+      'label'       => t('Node Reference'),
+      'description' => t('Node Reference field.'),
+      'features'    => array(
+        // Add content to CSV downloads. Defaults to TRUE.
+        'csv'           => TRUE,
+        // Show this component in e-mailed submissions. Defaults to TRUE.
+        'email'         => TRUE,
+        // Allow this component to be used as an e-mail FROM or TO address.
+        // Defaults to FALSE.
+        'email_address' => FALSE,
+        // Allow this component to be used as an e-mail SUBJECT or FROM name.
+        // Defaults to FALSE.
+        'email_name'    => FALSE,
+        // This component may be toggled as required or not. Defaults to TRUE.
+        'required'      => TRUE,
+        // This component has a title that can be toggled as displayed or not.
+        'title_display' => TRUE,
+        // This component has a title that can be displayed inline.
+        'title_inline'  => TRUE,
+        // If this component can be used as a conditional SOURCE. All components
+        // may always be displayed conditionally, regardless of this setting.
+        // Defaults to TRUE.
+        'conditional'   => FALSE,
+        // If this component allows other components to be grouped within it
+        // (like a fieldset or tabs). Defaults to FALSE.
+        'group'         => FALSE,
+        // If this component can be used for SPAM analysis, usually with Mollom.
+        'spam_analysis' => FALSE,
+        // If this component saves a file that can be used as an e-mail
+        // attachment. Defaults to FALSE.
+        'attachment'    => FALSE,
+      ),
+      'file'        => 'node_reference.inc',
+    );
+    return $components;
+  }
+  
+  /**
+ * Menu callback for the autocomplete results.
+ */
+function webform_references_autocomplete($bundles, $string = '') {
+  
+  $options = array(
+    'string' => $string,
+    'limit' => 10,
+  );
+  
+  $references = webform_references_potential_references($bundles, $options);
+
+  $matches = array();
+  foreach ($references as $id => $row) {
+    // Markup is fine in autocompletion results (might happen when rendered
+    // through Views) but we want to remove hyperlinks.
+    $suggestion = preg_replace('/<a href="([^<]*)">([^<]*)<\/a>/', '$2', $row['rendered']);
+    // Add a class wrapper for a few required CSS overrides.
+    $matches[$row['title'] . " [nid:$id]"] = '<div class="reference-autocomplete">' . $suggestion . '</div>';
+  }
+  drupal_json_output($matches);
+}
+
+/**
+ * Retrieves an array of candidate referenceable nodes.
+ *
+ * This info is used in various places (allowed values, autocomplete
+ * results, input validation...). Some of them only need the nids,
+ * others nid + titles, others yet nid + titles + rendered row (for
+ * display in widgets).
+ *
+ * The array we return contains all the potentially needed information,
+ * and lets consumers use the parts they actually need.
+ *
+ * @param $options
+ *   An array of options to limit the scope of the returned list. The following
+ *   key/value pairs are accepted:
+ *   - string: string to filter titles on (used by autocomplete).
+ *   - match: operator to match the above string against, can be any of:
+ *     'contains', 'equals', 'starts_with'. Defaults to 'contains'.
+ *   - ids: array of specific node ids to lookup.
+ *   - limit: maximum size of the the result set. Defaults to 0 (no limit).
+ *
+ * @return
+ *   An array of valid nodes in the form:
+ *   array(
+ *     nid => array(
+ *       'title' => The node title,
+ *       'rendered' => The text to display in widgets (can be HTML)
+ *     ),
+ *     ...
+ *   )
+ */
+function webform_references_potential_references($bundles, $options = array()) {
+  // Fill in default options.
+  $options += array(
+    'string' => '',
+    'match' => 'contains',
+    'ids' => array(),
+    'limit' => 0,
+  );
+
+  $results = &drupal_static(__FUNCTION__, array());
+
+  // Create unique id for static cache.
+  $cid = $options['match'] . ':'
+    . ($options['string'] !== '' ? $options['string'] : implode('-', $options['ids']))
+    . ':' . $options['limit'];
+  if (!isset($results[$cid])) {
+    $references = _webform_references_potential_references_standard($bundles, $options);
+    // Store the results.
+    $results[$cid] = !empty($references) ? $references : array();
+  }
+  return $results[$cid];
+}
+
+/**
+ * Helper function for node_reference_potential_references().
+ *
+ * List of referenceable nodes defined by content types.
+ */
+function _webform_references_potential_references_standard($bundles, $options) {
+  // Avoid useless work
+  $bundles_array = explode('+', $bundles);
+  if (!count($bundles_array)) {
+    return array();
+  }
+
+  $query = db_select('node', 'n');
+  $node_nid_alias   = $query->addField('n', 'nid');
+  $node_title_alias = $query->addField('n', 'title', 'node_title');
+  $node_type_alias  = $query->addField('n', 'type',  'node_type');
+  $query->addTag('node_access')
+    ->addMetaData('id', ' _webform_references_potential_references_standard')
+    ->addMetaData('options', $options);
+
+  if (is_array($bundles_array)) {
+    $query->condition('n.type', $bundles_array, 'IN');
+  }
+
+  if ($options['string'] !== '') {
+    switch ($options['match']) {
+      case 'contains':
+        $query->condition('n.title', '%' . $options['string'] . '%', 'LIKE');
+        break;
+
+      case 'starts_with':
+        $query->condition('n.title', $options['string'] . '%', 'LIKE');
+        break;
+
+      case 'equals':
+      default: // no match type or incorrect match type: use "="
+        $query->condition('n.title', $options['string']);
+        break;
+    }
+  }
+
+  if ($options['ids']) {
+    $query->condition('n.nid', $options['ids'], 'IN');
+  }
+
+  if ($options['limit']) {
+    $query->range(0, $options['limit']);
+  }
+
+  $query
+    ->orderBy($node_title_alias)
+    ->orderBy($node_type_alias);
+
+  $result = $query->execute()->fetchAll();
+  $references = array();
+  foreach ($result as $node) {
+    $references[$node->nid] = array(
+      'title'    => $node->node_title,
+      'rendered' => check_plain($node->node_title),
+    );
+  }
+  
+  return $references;
+}

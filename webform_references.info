@@ -1,0 +1,8 @@
+name = Webform Node Reference
+description = Defines a webform component type for referencing the nodes.
+package = Webform
+core = 7.x
+
+dependencies[] = webform
+
+files[] = webform_references.module
