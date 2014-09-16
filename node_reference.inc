@@ -95,7 +95,7 @@ function webform_validate_node_reference($element, $form_state) {
     $nid = NULL;
     if (!empty($value)) {
         // Check whether we have an explicit "[nid:n]" input.
-        preg_match('/^(?:\s*|(.*) )?\[\s*nid\s*:\s*(\d+)\s*\]$/', $value, $matches);
+        preg_match('/^(?:\s*|(.*) )?\[\s*id\s*:\s*(\d+)\s*\]$/', $value, $matches);
         if (!empty($matches)) {
             list(, $title, $nid) = $matches;
             if (!empty($title)) {
@@ -132,3 +132,100 @@ function webform_validate_node_reference($element, $form_state) {
     }
 }
 
+/**
+ * A hook for changing the input values before saving to the database.
+ * Webform expects a component to consist of a single field, or a single array
+ * of fields. If you have a component that requires a deeper form tree
+ * you must flatten the data into a single array using this callback
+ * or by setting #parents on each field to avoid data loss and/or unexpected
+ * behavior.
+ * Note that Webform will save the result of this function directly into the
+ * database.
+ *
+ * @param $component
+ *   A Webform component array.
+ * @param $value
+ *   The POST data associated with the user input.
+ *
+ * @return
+ *   An array of values to be saved into the database. Note that this should be
+ *   a numerically keyed array.
+ */
+function _webform_submit_node_reference($component, $value) {
+  preg_match('/^(?:\s*|(.*) )?\[\s*id\s*:\s*(\d+)\s*\]$/', $value, $matches);
+  if (!empty($matches)) {
+    list(, $title, $nid) = $matches;
+    $value = $nid;
+  }
+  return $value;
+}
+
+/**
+ * Implements _webform_theme_component().
+ */
+function _webform_theme_node_reference() {
+  return array('webform_display_node_reference_field' => array('render element' => 'element',),);
+}
+
+/**
+ * Display the result of a submission for a component.
+ * The output of this function will be displayed under the "Results" tab then
+ * "Submissions". This should output the saved data in some reasonable manner.
+ *
+ * @param $component
+ *   A Webform component array.
+ * @param $value
+ *   An array of information containing the submission result, directly
+ *   correlating to the webform_submitted_data database table schema.
+ * @param $format
+ *   Either 'html' or 'text'. Defines the format that the content should be
+ *   returned as. Make sure that returned content is run through check_plain()
+ *   or other filtering functions when returning HTML.
+ *
+ * @return
+ *   A renderable element containing at the very least these properties:
+ *    - #title
+ *    - #weight
+ *    - #component
+ *    - #format
+ *    - #value
+ *   Webform also uses #theme_wrappers to output the end result to the user,
+ *   which will properly format the label and content for use within an e-mail
+ *   (such as wrapping the text) or as HTML (ensuring consistent output).
+ */
+function _webform_display_node_reference($component, $value, $format = 'html') {
+  return array(
+    '#title'          => $component['name'],
+    '#weight'         => $component['weight'],
+    '#theme'          => 'webform_display_node_reference_field',
+    '#theme_wrappers' => $format == 'html' ? array('webform_element') : array('webform_element_text'),
+    '#post_render'    => array('webform_element_wrapper'),
+    '#component'      => $component,
+    '#format'         => $format,
+    '#value'          => isset($value[0]) ? $value[0] : NULL,
+  );
+}
+
+/**
+ * Format the output of data for this component.
+ */
+function theme_webform_display_node_reference_field($variables) {
+  $markup = array();
+  $element = $variables['element'];
+  $plain_value = check_plain($element['#value']);
+  $markup['#markup'] = _get_title_linked($plain_value);
+  return drupal_render($markup);
+}
+
+/*
+ * Helper function to get rendered link
+ */
+function _get_title_linked($nid) {
+  $node_items = db_select('node', 'n')
+  ->fields('n', array('title'))
+  ->condition('nid', $nid)
+  ->execute()
+  ->fetchAssoc();
+  $node_url = "node/".$nid;
+  return l($node_items['title'], $node_url);
+}
