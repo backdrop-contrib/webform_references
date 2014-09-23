@@ -213,19 +213,63 @@ function theme_webform_display_node_reference_field($variables) {
   $markup = array();
   $element = $variables['element'];
   $plain_value = check_plain($element['#value']);
-  $markup['#markup'] = _get_title_linked($plain_value);
+  $markup['#markup'] = _get_node_title($plain_value, TRUE);
   return drupal_render($markup);
 }
 
 /*
- * Helper function to get rendered link
+ * Helper function to get title of node
  */
-function _get_title_linked($nid) {
+function _get_node_title($nid, $link = FALSE) {
   $node_items = db_select('node', 'n')
   ->fields('n', array('title'))
   ->condition('nid', $nid)
   ->execute()
   ->fetchAssoc();
-  $node_url = "node/".$nid;
-  return l($node_items['title'], $node_url);
+  $title = ($link == TRUE) ? l($node_items['title'], 'node/' . $nid) : $node_items['title'];
+  return $title;
+}
+
+/**
+ * Return the header for this component to be displayed in a CSV file.
+ * The output of this function will be displayed under the "Results" tab then
+ * "Download".
+ *
+ * @param $component
+ *   A Webform component array.
+ * @param $export_options
+ *   An array of options that may configure export of this field.
+ *
+ * @return
+ *   An array of data to be displayed in the first three rows of a CSV file, not
+ *   including either prefixed or trailing commas.
+ */
+function _webform_csv_headers_node_reference($component, $export_options) {
+  $header = array();
+  $header[0] = '';
+  $header[1] = '';
+  $header[2] = $component['name'];
+  return $header;
+}
+
+/**
+ * Format the submitted data of a component for CSV downloading.
+ * The output of this function will be displayed under the "Results" tab then
+ * "Download".
+ *
+ * @param $component
+ *   A Webform component array.
+ * @param $export_options
+ *   An array of options that may configure export of this field.
+ * @param $value
+ *   An array of information containing the submission result, directly
+ *   correlating to the webform_submitted_data database schema.
+ *
+ * @return
+ *   An array of items to be added to the CSV file. Each value within the array
+ *   will be another column within the file. This function is called once for
+ *   every row of data.
+ */
+function _webform_csv_data_node_reference($component, $export_options, $value) {
+  return !isset( $value[0] ) ? '' : _get_node_title($value[0]);
 }
