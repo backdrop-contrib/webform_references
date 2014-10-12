@@ -69,9 +69,7 @@ function webform_references_autocomplete($bundles, $string = '') {
     'string' => $string,
     'limit' => 10,
   );
-  
   $references = webform_references_potential_references($bundles, $options);
-
   $matches = array();
   foreach ($references as $id => $row) {
     // Markup is fine in autocompletion results (might happen when rendered
@@ -80,7 +78,6 @@ function webform_references_autocomplete($bundles, $string = '') {
     // Add a class wrapper for a few required CSS overrides.
     $matches[$row['title'] . " [id:$id]"] = '<div class="reference-autocomplete">' . $suggestion . '</div>';
   }
-
   drupal_json_output($matches);
 }
 
@@ -119,16 +116,12 @@ function webform_references_potential_references($bundles, $options = array()) {
   // Fill in default options.
   $options += array(
     'string' => '',
-    'match' => 'contains',
     'ids' => array(),
     'limit' => 0,
   );
-
   $results = &drupal_static(__FUNCTION__, array());
-
   // Create unique id for static cache.
-  $cid = $options['match'] . ':'
-    . ($options['string'] !== '' ? $options['string'] : implode('-', $options['ids']))
+  $cid = ($options['string'] !== '' ? $options['string'] : implode('-', $options['ids']))
     . ':' . $options['limit'];
   if (!isset($results[$cid])) {
     $references = _webform_references_potential_references_standard($bundles, $options);
@@ -149,7 +142,6 @@ function _webform_references_potential_references_standard($bundles, $options) {
   if (!count($bundles_array)) {
     return array();
   }
-
   $query = db_select('node', 'n');
   $node_nid_alias   = $query->addField('n', 'nid');
   $node_title_alias = $query->addField('n', 'title', 'node_title');
@@ -157,40 +149,21 @@ function _webform_references_potential_references_standard($bundles, $options) {
   $query->addTag('node_access')
     ->addMetaData('id', ' _webform_references_potential_references_standard')
     ->addMetaData('options', $options);
-
   if (is_array($bundles_array)) {
     $query->condition('n.type', $bundles_array, 'IN');
   }
-
   if ($options['string'] !== '') {
-    switch ($options['match']) {
-      case 'contains':
-        $query->condition('n.title', '%' . $options['string'] . '%', 'LIKE');
-        break;
-
-      case 'starts_with':
-        $query->condition('n.title', $options['string'] . '%', 'LIKE');
-        break;
-
-      case 'equals':
-      default: // no match type or incorrect match type: use "="
-        $query->condition('n.title', $options['string']);
-        break;
-    }
+    $query->condition('n.title', '%' . $options['string'] . '%', 'LIKE');
   }
-
   if ($options['ids']) {
     $query->condition('n.nid', $options['ids'], 'IN');
   }
-
   if ($options['limit']) {
     $query->range(0, $options['limit']);
   }
-
   $query
     ->orderBy($node_title_alias)
     ->orderBy($node_type_alias);
-
   $result = $query->execute()->fetchAll();
   $references = array();
   foreach ($result as $node) {
@@ -199,6 +172,21 @@ function _webform_references_potential_references_standard($bundles, $options) {
       'rendered' => check_plain($node->node_title),
     );
   }
-  
   return $references;
+}
+
+/**
+ * Helper function to get node list
+ */
+function _get_node_list($types) {
+  $result = db_select('node', 'n')
+    ->fields('n', array('nid', 'title'))
+    ->condition('n.type', $types, 'IN')
+    ->execute()
+    ->fetchAll();
+  $node_list = array();
+  foreach ($result as $content) {
+    $node_list[$content->nid] = $content->title;
+  }
+  return $node_list;
 }
