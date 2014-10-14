@@ -95,7 +95,7 @@ function _webform_render_node_reference($component, $value = NULL, $filter = TRU
       break;
     
     default:
-      $node_list = _get_node_list($component['extra']['referenceable_types']);
+      $node_list = _webform_references_get_node_list($component['extra']['referenceable_types']);
       $form_item = array(
         '#type' => 'select',
         '#description' => $filter ? _webform_filter_descriptions($component['extra']['description']) : $component['extra']['description'],
@@ -240,14 +240,14 @@ function theme_webform_display_node_reference_field($variables) {
   $markup = array();
   $element = $variables['element'];
   $plain_value = check_plain($element['#value']);
-  $markup['#markup'] = _get_node_title($plain_value, TRUE);
+  $markup['#markup'] = _webform_references_get_node_title($plain_value, TRUE);
   return drupal_render($markup);
 }
 
 /*
  * Helper function to get title of node
  */
-function _get_node_title($nid, $link = FALSE) {
+function _webform_references_get_node_title($nid, $link = FALSE) {
   $node_items = db_select('node', 'n')
     ->fields('n', array('title'))
     ->condition('nid', $nid)
@@ -298,5 +298,5 @@ function _webform_csv_headers_node_reference($component, $export_options) {
  *   every row of data.
  */
 function _webform_csv_data_node_reference($component, $export_options, $value) {
-  return !isset( $value[0] ) ? '' : _get_node_title($value[0]);
+  return !isset( $value[0] ) ? '' : _webform_references_get_node_title($value[0]);
 }

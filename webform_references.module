@@ -178,7 +178,7 @@ function _webform_references_potential_references_standard($bundles, $options) {
 /**
  * Helper function to get node list
  */
-function _get_node_list($types) {
+function _webform_references_get_node_list($types) {
   $result = db_select('node', 'n')
     ->fields('n', array('nid', 'title'))
     ->condition('n.type', $types, 'IN')
