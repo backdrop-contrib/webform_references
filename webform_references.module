@@ -82,34 +82,7 @@ function webform_references_autocomplete($bundles, $string = '') {
 }
 
 /**
- * Retrieves an array of candidate referenceable nodes.
- *
- * This info is used in various places (allowed values, autocomplete
- * results, input validation...). Some of them only need the nids,
- * others nid + titles, others yet nid + titles + rendered row (for
- * display in widgets).
- *
- * The array we return contains all the potentially needed information,
- * and lets consumers use the parts they actually need.
- *
- * @param $options
- *   An array of options to limit the scope of the returned list. The following
- *   key/value pairs are accepted:
- *   - string: string to filter titles on (used by autocomplete).
- *   - match: operator to match the above string against, can be any of:
- *     'contains', 'equals', 'starts_with'. Defaults to 'contains'.
- *   - ids: array of specific node ids to lookup.
- *   - limit: maximum size of the the result set. Defaults to 0 (no limit).
- *
- * @return
- *   An array of valid nodes in the form:
- *   array(
- *     nid => array(
- *       'title' => The node title,
- *       'rendered' => The text to display in widgets (can be HTML)
- *     ),
- *     ...
- *   )
+ * Retrieves an array of referenceable nodes.
  */
 
 function webform_references_potential_references($bundles, $options = array()) {
@@ -132,9 +105,7 @@ function webform_references_potential_references($bundles, $options = array()) {
 }
 
 /**
- * Helper function for node_reference_potential_references().
- *
- * List of referenceable nodes defined by content types.
+ * Helper function for webform_references_potential_references().0
  */
 function _webform_references_potential_references_standard($bundles, $options) {
   // Avoid useless work
