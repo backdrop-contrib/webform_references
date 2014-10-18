@@ -12,6 +12,7 @@ function _webform_defaults_node_reference() {
   return array(
     'name' => '',
     'form_key' => NULL,
+    'required'  => 0,
     'mandatory' => 0,
     'pid' => 0,
     'weight' => 0,
@@ -21,7 +22,7 @@ function _webform_defaults_node_reference() {
       'attributes' => array(),
       'description' => '',
       'referenceable_types' => array(),
-      'field_type' => '',
+      'widget_type' => '',
     ),
   );
 }
@@ -39,12 +40,12 @@ function _webform_edit_node_reference($component) {
     '#options' => array_map('check_plain', node_type_get_names()),
     '#required' => TRUE,
   );
-  $form['extra']['field_type'] = array(
+  $form['extra']['widget_type'] = array(
     '#type' => 'select',
     '#title' => t('Field Type'),
     '#multiple' => FALSE,
-    '#default_value' => $component['extra']['field_type'],
-    '#options' => array('autocomplete' => 'Autocomplete', 'select' => 'Select List'),
+    '#default_value' => $component['extra']['widget_type'],
+    '#options' => array('select' => 'Select List', 'autocomplete' => 'Autocomplete'),
     '#required' => TRUE,
   );
   return $form;
@@ -55,13 +56,13 @@ function _webform_edit_node_reference($component) {
  */
 function _webform_render_node_reference($component, $value = NULL, $filter = TRUE) {
   //TODO: change these to use non-private functions (no _) if/when webform 3.x is entirely deprecated
-  switch ($component['extra']['field_type']) {
+  switch ($component['extra']['widget_type']) {
     case 'autocomplete':
       $form_item = array(
         '#type' => 'textfield',
-        '#autocomplete_path' => 'webform_references/autocomplete/' . implode('+', array_filter($component['extra']['referenceable_types'])),
+        '#autocomplete_path' => 'webform_references/node/autocomplete/' . implode('+', array_filter($component['extra']['referenceable_types'])),
         '#description' => $filter ? _webform_filter_descriptions($component['extra']['description']) : $component['extra']['description'],
-        '#required' => $component['mandatory'],
+        '#required'         => $component['required'] || $component['mandatory'], //Either one being true will could as required...because webform changed in 4.x-alpha8
         '#title' => $filter ? _webform_filter_xss($component['name']) : $component['name'],
         '#title_display' => $component['extra']['title_display'] ? $component['extra']['title_display'] : 'before',
         '#weight' => $component['weight'],
@@ -74,7 +75,7 @@ function _webform_render_node_reference($component, $value = NULL, $filter = TRU
       $form_item = array(
         '#type' => 'select',
         '#description' => $filter ? _webform_filter_descriptions($component['extra']['description']) : $component['extra']['description'],
-        '#required' => $component['mandatory'],
+        '#required'         => $component['required'] || $component['mandatory'], //Either one being true will could as required...because webform changed in 4.x-alpha8
         '#title' => $filter ? _webform_filter_xss($component['name']) : $component['name'],
         '#title_display' => $component['extra']['title_display'] ? $component['extra']['title_display'] : 'before',
         '#options' => $node_list,
@@ -129,7 +130,7 @@ function webform_validate_node_reference($element, $form_state) {
  * A hook for changing the input values before saving to the database.
  */
 function _webform_submit_node_reference($component, $value) {
-  if ($component['extra']['field_type'] == 'autocomplete') {
+  if ($component['extra']['widget_type'] == 'autocomplete') {
     preg_match('/^(?:\s*|(.*) )?\[\s*id\s*:\s*(\d+)\s*\]$/', $value, $matches);
     if (!empty($matches)) {
       list(, $title, $nid) = $matches;

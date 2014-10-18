@@ -9,10 +9,10 @@
  * Implements hook_menu().
  */
 function webform_references_menu() {
-  $items['webform_references/autocomplete/%'] = array(
+  $items['webform_references/node/autocomplete/%'] = array(
     'page callback' => 'webform_references_autocomplete',
-    'page arguments' => array(2),
-    'access callback' => TRUE,
+    'page arguments' => array(3),
+    'access arguments' => array('access content'),
     'type' => MENU_CALLBACK,
   );
   return $items;
@@ -56,7 +56,7 @@ function webform_references_webform_component_info() {
       // attachment. Defaults to FALSE.
       'attachment'    => FALSE,
     ),
-    'file'        => 'node_references.inc',
+    'file'        => 'webform_references_node.inc',
   );
   return $components;
 }
@@ -84,9 +84,7 @@ function webform_references_autocomplete($bundles, $string = '') {
 /**
  * Retrieves an array of referenceable nodes.
  */
-
 function webform_references_potential_references($bundles, $options = array()) {
-  // Fill in default options.
   $options += array(
     'string' => '',
     'ids' => array(),
@@ -105,10 +103,9 @@ function webform_references_potential_references($bundles, $options = array()) {
 }
 
 /**
- * Helper function for webform_references_potential_references().0
+ * Helper function for webform_references_potential_references().
  */
 function _webform_references_potential_references_standard($bundles, $options) {
-  // Avoid useless work
   $bundles_array = explode('+', $bundles);
   if (!count($bundles_array)) {
     return array();
@@ -120,6 +117,7 @@ function _webform_references_potential_references_standard($bundles, $options) {
   $query->addTag('node_access')
     ->addMetaData('id', ' _webform_references_potential_references_standard')
     ->addMetaData('options', $options);
+  $query->condition('n.status', 1);
   if (is_array($bundles_array)) {
     $query->condition('n.type', $bundles_array, 'IN');
   }
