@@ -4,5 +4,3 @@ package = Webform
 core = 7.x
 
 dependencies[] = webform
-
-files[] = webform_references.module

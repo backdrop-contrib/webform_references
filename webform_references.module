@@ -1,10 +1,8 @@
 <?php
-
 /**
  * @file
  * Webform module node reference component.
  */
-
 /**
  * Implements hook_menu().
  */
@@ -19,7 +17,7 @@ function webform_references_menu() {
 }
 
 /** 
- * Implementation of hook_webform_component_info(). 
+ * Implements hook_webform_component_info().
  */
 function webform_references_webform_component_info() {
   $components = array();
@@ -60,7 +58,7 @@ function webform_references_webform_component_info() {
   );
   return $components;
 }
-  
+
 /**
  * Menu callback for the autocomplete results.
  */
@@ -111,9 +109,9 @@ function _webform_references_potential_references_standard($bundles, $options) {
     return array();
   }
   $query = db_select('node', 'n');
-  $node_nid_alias   = $query->addField('n', 'nid');
+  $query->addField('n', 'nid');
   $node_title_alias = $query->addField('n', 'title', 'node_title');
-  $node_type_alias  = $query->addField('n', 'type',  'node_type');
+  $node_type_alias = $query->addField('n', 'type', 'node_type');
   $query->addTag('node_access')
     ->addMetaData('id', ' _webform_references_potential_references_standard')
     ->addMetaData('options', $options);
@@ -137,7 +135,7 @@ function _webform_references_potential_references_standard($bundles, $options) {
   $references = array();
   foreach ($result as $node) {
     $references[$node->nid] = array(
-      'title'    => $node->node_title,
+      'title' => $node->node_title,
       'rendered' => check_plain($node->node_title),
     );
   }
@@ -145,7 +143,7 @@ function _webform_references_potential_references_standard($bundles, $options) {
 }
 
 /**
- * Helper function to get node list
+ * Helper function to get node list.
  */
 function _webform_references_get_node_list($types) {
   $result = db_select('node', 'n')

@@ -1,10 +1,8 @@
 <?php
-
 /**
  * @file
  * Webform module node reference component.
  */
-
 /**
  * Implements _webform_defaults_component().
  */
@@ -45,7 +43,7 @@ function _webform_edit_node_reference($component) {
     '#title' => t('Field Type'),
     '#multiple' => FALSE,
     '#default_value' => $component['extra']['widget_type'],
-    '#options' => array('select' => 'Select List', 'autocomplete' => 'Autocomplete'),
+    '#options' => array('select' => t('Select List'), 'autocomplete' => t('Autocomplete')),
     '#required' => TRUE,
   );
   return $form;
@@ -55,14 +53,17 @@ function _webform_edit_node_reference($component) {
  * Render a Webform component to be part of a form.
  */
 function _webform_render_node_reference($component, $value = NULL, $filter = TRUE) {
-  //TODO: change these to use non-private functions (no _) if/when webform 3.x is entirely deprecated
+  // TODO: change these to use non-private functions (no _) 
+  // if/when webform 3.x is entirely deprecated.
   switch ($component['extra']['widget_type']) {
     case 'autocomplete':
       $form_item = array(
         '#type' => 'textfield',
         '#autocomplete_path' => 'webform_references/node/autocomplete/' . implode('+', array_filter($component['extra']['referenceable_types'])),
         '#description' => $filter ? _webform_filter_descriptions($component['extra']['description']) : $component['extra']['description'],
-        '#required'         => $component['required'] || $component['mandatory'], //Either one being true will could as required...because webform changed in 4.x-alpha8
+        '#required'         => $component['required'] || $component['mandatory'],
+        // Either one being true will could as required...
+        // because webform changed in 4.x-alpha8
         '#title' => $filter ? _webform_filter_xss($component['name']) : $component['name'],
         '#title_display' => $component['extra']['title_display'] ? $component['extra']['title_display'] : 'before',
         '#weight' => $component['weight'],
@@ -75,7 +76,9 @@ function _webform_render_node_reference($component, $value = NULL, $filter = TRU
       $form_item = array(
         '#type' => 'select',
         '#description' => $filter ? _webform_filter_descriptions($component['extra']['description']) : $component['extra']['description'],
-        '#required'         => $component['required'] || $component['mandatory'], //Either one being true will could as required...because webform changed in 4.x-alpha8
+        '#required'         => $component['required'] || $component['mandatory'],
+        // Either one being true will could as required...
+        // because webform changed in 4.x-alpha8.
         '#title' => $filter ? _webform_filter_xss($component['name']) : $component['name'],
         '#title_display' => $component['extra']['title_display'] ? $component['extra']['title_display'] : 'before',
         '#options' => $node_list,
@@ -87,7 +90,7 @@ function _webform_render_node_reference($component, $value = NULL, $filter = TRU
 }
 
 /**
- * Validation Callback for node reference field
+ * Validation Callback for node reference field.
  */
 function webform_validate_node_reference($element, $form_state) {
   $value = $element['#value'];
@@ -106,7 +109,7 @@ function webform_validate_node_reference($element, $form_state) {
           form_error($element, t('Please check your selection.'));
         }
       }
-    } 
+    }
     else {
       $options = array(
         'string' => $value,
@@ -118,7 +121,7 @@ function webform_validate_node_reference($element, $form_state) {
       $references = webform_references_potential_references($bundles, $options);
       if ($references) {
         $nid = key($references);
-      } 
+      }
       else {
         form_error($element, t('Please check your selection.'));
       }
@@ -133,7 +136,7 @@ function _webform_submit_node_reference($component, $value) {
   if ($component['extra']['widget_type'] == 'autocomplete') {
     preg_match('/^(?:\s*|(.*) )?\[\s*id\s*:\s*(\d+)\s*\]$/', $value, $matches);
     if (!empty($matches)) {
-      list(, $title, $nid) = $matches;
+      list(, , $nid) = $matches;
       $value = $nid;
     }
   }
@@ -149,8 +152,6 @@ function _webform_theme_node_reference() {
 
 /**
  * Display the result of a submission for a component.
- * The output of this function will be displayed under the "Results" tab then
- * "Submissions". This should output the saved data in some reasonable manner.
  */
 function _webform_display_node_reference($component, $value, $format = 'html') {
   return array(
@@ -176,7 +177,7 @@ function theme_webform_display_node_reference_field($variables) {
   return drupal_render($markup);
 }
 
-/*
+/**
  * Helper function to get title of node
  */
 function _webform_references_get_node_title($nid, $link = FALSE) {
@@ -191,8 +192,6 @@ function _webform_references_get_node_title($nid, $link = FALSE) {
 
 /**
  * Return the header for this component to be displayed in a CSV file.
- * The output of this function will be displayed under the "Results" tab then
- * "Download".
  */
 function _webform_csv_headers_node_reference($component, $export_options) {
   $header = array();
@@ -204,9 +203,7 @@ function _webform_csv_headers_node_reference($component, $export_options) {
 
 /**
  * Format the submitted data of a component for CSV downloading.
- * The output of this function will be displayed under the "Results" tab then
- * "Download".
  */
 function _webform_csv_data_node_reference($component, $export_options, $value) {
-  return !isset( $value[0] ) ? '' : _webform_references_get_node_title($value[0]);
+  return !isset($value[0]) ? '' : _webform_references_get_node_title($value[0]);
 }
