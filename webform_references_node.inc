@@ -1,8 +1,10 @@
 <?php
+
 /**
  * @file
  * Webform module node reference component.
  */
+
 /**
  * Implements _webform_defaults_component().
  */
@@ -68,6 +70,7 @@ function _webform_render_node_reference($component, $value = NULL, $filter = TRU
         '#element_validate' => array('webform_validate_node_reference'),
       );
       break;
+
     default:
       $node_list = _webform_references_get_node_list($component['extra']['referenceable_types']);
       $form_item = array(
