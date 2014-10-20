@@ -16,7 +16,7 @@ function webform_references_menu() {
   return $items;
 }
 
-/** 
+/**
  * Implements hook_webform_component_info().
  */
 function webform_references_webform_component_info() {

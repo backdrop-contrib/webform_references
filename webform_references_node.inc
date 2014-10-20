@@ -53,8 +53,6 @@ function _webform_edit_node_reference($component) {
  * Render a Webform component to be part of a form.
  */
 function _webform_render_node_reference($component, $value = NULL, $filter = TRUE) {
-  // TODO: change these to use non-private functions (no _) 
-  // if/when webform 3.x is entirely deprecated.
   switch ($component['extra']['widget_type']) {
     case 'autocomplete':
       $form_item = array(
@@ -70,7 +68,6 @@ function _webform_render_node_reference($component, $value = NULL, $filter = TRU
         '#element_validate' => array('webform_validate_node_reference'),
       );
       break;
-    
     default:
       $node_list = _webform_references_get_node_list($component['extra']['referenceable_types']);
       $form_item = array(
@@ -178,7 +175,7 @@ function theme_webform_display_node_reference_field($variables) {
 }
 
 /**
- * Helper function to get title of node
+ * Helper function to get title of node.
  */
 function _webform_references_get_node_title($nid, $link = FALSE) {
   $node_items = db_select('node', 'n')
