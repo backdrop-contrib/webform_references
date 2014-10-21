@@ -56,7 +56,7 @@ function webform_references_webform_component_info() {
       // attachment. Defaults to FALSE.
       'attachment'    => FALSE,
     ),
-    'file'        => 'webform_references_node.inc',
+    'file'        => 'webform_references.node.inc',
   );
   return $components;
 }
