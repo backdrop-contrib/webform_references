@@ -170,7 +170,7 @@ function webform_references_system_info_alter(&$info, $file, $type) {
       ->condition('wc.type', 'node_reference')
       ->execute()->fetchAll();
     if (!empty($result)) {
-      $info['description'] = "Defines a webform component type for referencing the nodes. <span class='error'>(Warning: Don't disable/uninstall the module because the node_reference type component is already in use.)</span>";
+      $info['description'] = t("Defines a webform component type for referencing the nodes. <span class='error'>(Warning: Don't disable/uninstall the module because the node_reference type component is already in use.)</span>");
     }
   }
 }
