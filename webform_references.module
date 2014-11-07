@@ -76,13 +76,32 @@ function webform_references_autocomplete($bundles, $string = '') {
     // through Views) but we want to remove hyperlinks.
     $suggestion = preg_replace('/<a href="([^<]*)">([^<]*)<\/a>/', '$2', $row['rendered']);
     // Add a class wrapper for a few required CSS overrides.
-    $matches[$row['title'] . " [id:$id]"] = '<div class="reference-autocomplete">' . $suggestion . '</div>';
+    $matches[$row['title'] . " [id:$id]"] = check_plain($suggestion);
   }
   drupal_json_output($matches);
 }
 
 /**
  * Retrieves an array of referenceable nodes.
+ *
+ * @param $bundles
+ *   List of content types separated by (+) sign to be referenced.
+ * @param $options
+ *   An array of options to limit the scope of the returned list. The following
+ *   key/value pairs are accepted:
+ *   - string: string to filter titles on (used by autocomplete).
+ *   - ids: array of specific node ids to lookup.
+ *   - limit: maximum size of the the result set. Defaults to 0 (no limit).
+ *
+ * @return
+ *   An array of valid nodes in the form:
+ *   array(
+ *     nid => array(
+ *       'title' => The node title,
+ *       'rendered' => The text to display in widgets (can be HTML)
+ *     ),
+ *     ...
+ *   )
  */
 function webform_references_potential_references($bundles, $options = array()) {
   $options += array(
@@ -104,7 +123,10 @@ function webform_references_potential_references($bundles, $options = array()) {
 
 /**
  * Helper function for webform_references_potential_references().
+ *
+ * List of referenceable nodes defined by content types.
  */
+functi
 function _webform_references_potential_references_standard($bundles, $options) {
   $bundles_array = explode('+', $bundles);
   if (!count($bundles_array)) {
@@ -138,7 +160,7 @@ function _webform_references_potential_references_standard($bundles, $options) {
   foreach ($result as $node) {
     $references[$node->nid] = array(
       'title' => $node->node_title,
-      'rendered' => check_plain($node->node_title),
+      'rendered' => $node->node_title,
     );
   }
   return $references;
@@ -151,6 +173,7 @@ function _webform_references_get_node_list($types) {
   $result = db_select('node', 'n')
     ->fields('n', array('nid', 'title'))
     ->condition('n.type', $types, 'IN')
+    ->condition('n.status', 1)
     ->execute()
     ->fetchAll();
   $node_list = array();
@@ -162,6 +185,9 @@ function _webform_references_get_node_list($types) {
 
 /**
  * Implements hook_system_info_alter().
+ *
+ * Add warning message to module info description if node_reference component
+ * is added in any webform.
  */
 function webform_references_system_info_alter(&$info, $file, $type) {
   if ($type == 'module' && $file->name == 'webform_references') {
