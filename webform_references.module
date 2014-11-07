@@ -84,16 +84,16 @@ function webform_references_autocomplete($bundles, $string = '') {
 /**
  * Retrieves an array of referenceable nodes.
  *
- * @param $bundles
+ * @param string $bundles
  *   List of content types separated by (+) sign to be referenced.
- * @param $options
+ * @param array $options
  *   An array of options to limit the scope of the returned list. The following
  *   key/value pairs are accepted:
  *   - string: string to filter titles on (used by autocomplete).
  *   - ids: array of specific node ids to lookup.
  *   - limit: maximum size of the the result set. Defaults to 0 (no limit).
  *
- * @return
+ * @return array
  *   An array of valid nodes in the form:
  *   array(
  *     nid => array(
@@ -126,7 +126,6 @@ function webform_references_potential_references($bundles, $options = array()) {
  *
  * List of referenceable nodes defined by content types.
  */
-functi
 function _webform_references_potential_references_standard($bundles, $options) {
   $bundles_array = explode('+', $bundles);
   if (!count($bundles_array)) {

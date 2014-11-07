@@ -31,7 +31,8 @@ Ctools (http://drupal.org/project/ctools)
 
 INSTALLATION
 ------------
-* Install as usual, see https://www.drupal.org/documentation/install/modules-themes/modules-7.
+* Install as usual,
+see https://www.drupal.org/documentation/install/modules-themes/modules-7.
 
 * Don't uninstall this module if the Node Reference component exists in any
 Webform otherwise it will give you error.

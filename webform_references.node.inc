@@ -29,16 +29,17 @@ function _webform_defaults_node_reference() {
 
 /**
  * Generate the form for editing a component.
+ *
  * Create a set of form elements to be displayed on the form for editing this
  * component. Use care naming the form items, as this correlates directly to the
  * database schema. The component "Name" and "Description" fields are added to
  * every component type and are not necessary to specify here (although they
  * may be overridden if desired).
  *
- * @param $component
+ * @param array $component
  *   A Webform component array.
  *
- * @return
+ * @return array
  *   An array of form items to be displayed on the edit component page
  */
 function _webform_edit_node_reference($component) {
@@ -65,14 +66,14 @@ function _webform_edit_node_reference($component) {
 /**
  * Render a Webform component to be part of a form.
  *
- * @param $component
+ * @param array $component
  *   A Webform component array.
- * @param $value
+ * @param array $value
  *   If editing an existing submission or resuming a draft, this will contain
  *   an array of values to be shown instead of the default in the component
  *   configuration. This value will always be an array, keyed numerically for
  *   each value saved in this field.
- * @param $filter
+ * @param string $filter
  *   Whether or not to filter the contents of descriptions and values when
  *   rendering the component. Values need to be unfiltered to be editable by
  *   Form Builder.
@@ -92,8 +93,8 @@ function _webform_render_node_reference($component, $value = NULL, $filter = TRU
         '#title' => $filter ? _webform_filter_xss($component['name']) : $component['name'],
         '#title_display' => $component['extra']['title_display'] ? $component['extra']['title_display'] : 'before',
         '#weight' => $component['weight'],
-        '#element_validate' => array('webform_validate_node_reference'),
-        '#theme_wrappers' => array('webform_element')
+        '#element_validate' => array('webform_references_validate_node_reference'),
+        '#theme_wrappers' => array('webform_element'),
       );
       break;
 
@@ -109,7 +110,7 @@ function _webform_render_node_reference($component, $value = NULL, $filter = TRU
         '#title_display' => $component['extra']['title_display'] ? $component['extra']['title_display'] : 'before',
         '#options' => $node_list,
         '#weight' => $component['weight'],
-        '#theme_wrappers' => array('webform_element')
+        '#theme_wrappers' => array('webform_element'),
       );
       break;
   }
@@ -119,7 +120,7 @@ function _webform_render_node_reference($component, $value = NULL, $filter = TRU
 /**
  * Validation Callback for node reference field.
  */
-function webform_validate_node_reference($element, $form_state) {
+function webform_references_validate_node_reference($element, $form_state) {
   $value = $element['#value'];
   $nid = NULL;
   if (!empty($value)) {
@@ -158,17 +159,17 @@ function webform_validate_node_reference($element, $form_state) {
 
 /**
  * A hook for changing the input values before saving to the database.
+ *
  * Note that Webform will save the result of this function directly into the
  * database.
  *
- * @param $component
+ * @param array $component
  *   A Webform component array.
- * @param $value
+ * @param string $value
  *   The POST data associated with the user input.
  *
- * @return
- *   An array of values to be saved into the database. Note that this should be
- *   a numerically keyed array.
+ * @return string
+ *   A string of value to be saved into the database.
  */
 function _webform_submit_node_reference($component, $value) {
   if ($component['extra']['widget_type'] == 'autocomplete') {
@@ -190,20 +191,21 @@ function _webform_theme_node_reference() {
 
 /**
  * Display the result of a submission for a component.
+ *
  * The output of this function will be displayed under the "Results" tab then
  * "Submissions". This should output the saved data in some reasonable manner.
  *
- * @param $component
+ * @param array $component
  *   A Webform component array.
- * @param $value
+ * @param array $value
  *   An array of information containing the submission result, directly
  *   correlating to the webform_submitted_data database table schema.
- * @param $format
+ * @param string $format
  *   Either 'html' or 'text'. Defines the format that the content should be
  *   returned as. Make sure that returned content is run through check_plain()
  *   or other filtering functions when returning HTML.
  *
- * @return
+ * @return array
  *   A renderable element containing at the very least these properties:
  *    - #title
  *    - #weight
@@ -241,12 +243,12 @@ function theme_webform_display_node_reference_field($variables) {
 /**
  * Helper function to get title of node.
  *
- * @param $nid
+ * @param int $nid
  *   Node Id.
- * @param $link
+ * @param bool $link
  *   FALSE for plain text and TRUE for linked text.
- * 
- * @return
+ *
+ * @return string
  *   Title of the node (Linked if $link parameter is set to TRUE).
  */
 function _webform_references_get_node_title($nid, $link = FALSE) {
@@ -261,15 +263,16 @@ function _webform_references_get_node_title($nid, $link = FALSE) {
 
 /**
  * Return the header for this component to be displayed in a CSV file.
+ *
  * The output of this function will be displayed under the "Results" tab then
  * "Download".
  *
- * @param $component
+ * @param array $component
  *   A Webform component array.
- * @param $export_options
+ * @param array $export_options
  *   An array of options that may configure export of this field.
  *
- * @return
+ * @return array
  *   An array of data to be displayed in the first three rows of a CSV file, not
  *   including either prefixed or trailing commas.
  */
@@ -283,21 +286,20 @@ function _webform_csv_headers_node_reference($component, $export_options) {
 
 /**
  * Format the submitted data of a component for CSV downloading.
+ *
  * The output of this function will be displayed under the "Results" tab then
  * "Download".
  *
- * @param $component
+ * @param array $component
  *   A Webform component array.
- * @param $export_options
+ * @param array $export_options
  *   An array of options that may configure export of this field.
- * @param $value
+ * @param array $value
  *   An array of information containing the submission result, directly
  *   correlating to the webform_submitted_data database schema.
  *
- * @return
- *   An array of items to be added to the CSV file. Each value within the array
- *   will be another column within the file. This function is called once for
- *   every row of data.
+ * @return string
+ *   A string of item to be added to the CSV file.
  */
 function _webform_csv_data_node_reference($component, $export_options, $value) {
   return !isset($value[0]) ? '' : _webform_references_get_node_title($value[0]);
