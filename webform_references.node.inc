@@ -42,7 +42,7 @@ function _webform_defaults_node_reference() {
  * @return array
  *   An array of form items to be displayed on the edit component page
  */
-function _webform_edit_node_reference($component) {
+function _webform_edit_node_reference(array $component) {
   $form = array();
   $form['extra']['referenceable_types'] = array(
     '#type' => 'checkboxes',
@@ -80,7 +80,7 @@ function _webform_edit_node_reference($component) {
  *
  * @see _webform_client_form_add_component()
  */
-function _webform_render_node_reference($component, $value = NULL, $filter = TRUE) {
+function _webform_render_node_reference(array $component, array $value = NULL, $filter = TRUE) {
   switch ($component['extra']['widget_type']) {
     case 'autocomplete':
       $form_item = array(
@@ -171,7 +171,7 @@ function webform_references_validate_node_reference($element, $form_state) {
  * @return string
  *   A string of value to be saved into the database.
  */
-function _webform_submit_node_reference($component, $value) {
+function _webform_submit_node_reference(array $component, $value) {
   if ($component['extra']['widget_type'] == 'autocomplete') {
     preg_match('/^(?:\s*|(.*) )?\[\s*id\s*:\s*(\d+)\s*\]$/', $value, $matches);
     if (!empty($matches)) {
@@ -216,7 +216,7 @@ function _webform_theme_node_reference() {
  *   which will properly format the label and content for use within an e-mail
  *   (such as wrapping the text) or as HTML (ensuring consistent output).
  */
-function _webform_display_node_reference($component, $value, $format = 'html') {
+function _webform_display_node_reference(array $component, array $value, $format = 'html') {
   return array(
     '#title'          => $component['name'],
     '#weight'         => $component['weight'],
@@ -276,7 +276,7 @@ function _webform_references_get_node_title($nid, $link = FALSE) {
  *   An array of data to be displayed in the first three rows of a CSV file, not
  *   including either prefixed or trailing commas.
  */
-function _webform_csv_headers_node_reference($component, $export_options) {
+function _webform_csv_headers_node_reference(array $component, array $export_options) {
   $header = array();
   $header[0] = '';
   $header[1] = '';
@@ -301,6 +301,6 @@ function _webform_csv_headers_node_reference($component, $export_options) {
  * @return string
  *   A string of item to be added to the CSV file.
  */
-function _webform_csv_data_node_reference($component, $export_options, $value) {
+function _webform_csv_data_node_reference(array $component, array $export_options, array $value) {
   return !isset($value[0]) ? '' : _webform_references_get_node_title($value[0]);
 }
