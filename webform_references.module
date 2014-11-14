@@ -138,7 +138,7 @@ function _webform_references_potential_references_standard($bundles, $options) {
   $query->addTag('node_access')
     ->addMetaData('id', ' _webform_references_potential_references_standard')
     ->addMetaData('options', $options);
-  $query->condition('n.status', 1);
+  $query->condition('n.status', NODE_PUBLISHED);
   if (is_array($bundles_array)) {
     $query->condition('n.type', $bundles_array, 'IN');
   }
