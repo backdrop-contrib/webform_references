@@ -131,6 +131,7 @@ function webform_references_validate_node_reference($element, $form_state) {
         $real_title = db_select('node', 'n')
           ->fields('n', array('title'))
           ->condition('n.nid', $nid)
+          ->addTag('node_access')
           ->execute()
           ->fetchField();
         if (trim($title) != trim($real_title)) {
