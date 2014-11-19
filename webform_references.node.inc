@@ -258,7 +258,7 @@ function _webform_references_get_node_title($nid, $link = FALSE) {
     ->condition('nid', $nid)
     ->execute()
     ->fetchAssoc();
-  $title = ($link == TRUE) ? l($node_items['title'], 'node/' . $nid) : check_plain($node_items['title'])s;
+  $title = ($link == TRUE) ? l($node_items['title'], 'node/' . $nid) : check_plain($node_items['title']);
   return $title;
 }
 
