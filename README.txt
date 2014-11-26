@@ -11,15 +11,11 @@ CONTENTS OF THIS FILE
 
 INTRODUCTION
 ------------
-There could be requirement of something like Enquiry Form, enquiry can be of
-any type content like course, event etc.
-Then there is a need to add a reference field in webform to make it easy.
+Provides a webform component that can reference a node in webform. Currently,
+the module includes node reference component only.
+It provides "Select List" and "Autocomplete" as widget.
 
-The Webform References module provides a webform component to reference the
-nodes of any type with webform.
-
-The Node reference component is created by Webform References module,
-so their is no requirement of references module.
+User and term reference will be added later.
 
 
 REQUIREMENTS
