@@ -23,6 +23,7 @@ function _webform_defaults_node_reference() {
       'description' => '',
       'referenceable_types' => array(),
       'widget_type' => '',
+      'multiple' => NULL,
     ),
   );
 }
@@ -59,6 +60,18 @@ function _webform_edit_node_reference(array $component) {
     '#default_value' => $component['extra']['widget_type'],
     '#options' => array('select' => t('Select List'), 'autocomplete' => t('Autocomplete')),
     '#required' => TRUE,
+  );
+  $form['extra']['multiple'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Multiple'),
+    '#default_value' => $component['extra']['multiple'],
+    '#description' => t('Check this option if the user should be allowed to choose multiple values.'),
+    '#states' => array(
+      // Display this field when the widget_type is select list.
+      'visible' => array(
+        ':input[name="extra[widget_type]"]' => array('value' => 'select'),
+      ),
+    ),
   );
   return $form;
 }
@@ -110,6 +123,7 @@ function _webform_render_node_reference(array $component, array $value = NULL, $
         '#title_display' => $component['extra']['title_display'] ? $component['extra']['title_display'] : 'before',
         '#options' => $node_list,
         '#weight' => $component['weight'],
+        '#multiple' => $component['extra']['multiple'],
         '#theme_wrappers' => array('webform_element'),
       );
       break;
@@ -201,6 +215,7 @@ function _webform_theme_node_reference() {
  * @param array $value
  *   An array of information containing the submission result, directly
  *   correlating to the webform_submitted_data database table schema.
+ *   or NULL if no value submitted.
  * @param string $format
  *   Either 'html' or 'text'. Defines the format that the content should be
  *   returned as. Make sure that returned content is run through check_plain()
@@ -217,7 +232,7 @@ function _webform_theme_node_reference() {
  *   which will properly format the label and content for use within an e-mail
  *   (such as wrapping the text) or as HTML (ensuring consistent output).
  */
-function _webform_display_node_reference(array $component, array $value, $format = 'html') {
+function _webform_display_node_reference(array $component, $value, $format = 'html') {
   return array(
     '#title'          => $component['name'],
     '#weight'         => $component['weight'],
@@ -226,7 +241,7 @@ function _webform_display_node_reference(array $component, array $value, $format
     '#post_render'    => array('webform_element_wrapper'),
     '#component'      => $component,
     '#format'         => $format,
-    '#value'          => isset($value[0]) ? $value[0] : NULL,
+    '#value'          => (array) $value,
   );
 }
 
@@ -234,11 +249,14 @@ function _webform_display_node_reference(array $component, array $value, $format
  * Format the output of data for this component.
  */
 function theme_webform_display_node_reference_field($variables) {
-  $markup = array();
   $element = $variables['element'];
-  $plain_value = check_plain($element['#value']);
-  $markup['#markup'] = _webform_references_get_node_title($plain_value, TRUE);
-  return drupal_render($markup);
+  $items = array();
+  foreach ((array) $element['#value'] as $value) {
+    $nid = check_plain($value);
+    $items[] = _webform_references_get_node_title($nid, TRUE);
+  }
+  $output = count($items) > 1 ? theme('item_list', array('items' => $items)) : (isset($items[0]) ? $items[0] : '');
+  return $output;
 }
 
 /**
@@ -260,6 +278,19 @@ function _webform_references_get_node_title($nid, $link = FALSE) {
     ->fetchAssoc();
   $title = ($link == TRUE) ? l($node_items['title'], 'node/' . $nid) : check_plain($node_items['title']);
   return $title;
+}
+
+/**
+ * Implements _webform_table_component().
+ */
+function _webform_table_node_reference(array $component, $value) {
+  $value = (array) $value;
+  $items = array();
+
+  foreach ($value as $nid) {
+    $items[] = _webform_references_get_node_title($nid);
+  }
+  return (!empty($items)) ? implode('<br />', $items) : '';
 }
 
 /**
@@ -298,10 +329,16 @@ function _webform_csv_headers_node_reference(array $component, array $export_opt
  * @param array $value
  *   An array of information containing the submission result, directly
  *   correlating to the webform_submitted_data database schema.
+ *   or NULL if no value submitted.
  *
  * @return string
  *   A string of item to be added to the CSV file.
  */
-function _webform_csv_data_node_reference(array $component, array $export_options, array $value) {
-  return !isset($value[0]) ? '' : _webform_references_get_node_title($value[0]);
+function _webform_csv_data_node_reference(array $component, array $export_options, $value) {
+  $return = array();
+  $value = (array) $value;
+  foreach ($value as $nid) {
+    $return[] = _webform_references_get_node_title($nid);
+  }
+  return !empty($return) ? implode(', ', $return) : '';
 }
