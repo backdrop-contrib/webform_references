@@ -2,13 +2,13 @@
 
 /**
  * @file
- * Webform module node reference component.
+ * Webform module term reference component.
  */
 
 /**
  * Implements _webform_defaults_component().
  */
-function _webform_defaults_node_reference() {
+function _webform_defaults_term_reference() {
   return array(
     'name' => '',
     'form_key' => NULL,
@@ -43,14 +43,18 @@ function _webform_defaults_node_reference() {
  * @return array
  *   An array of form items to be displayed on the edit component page
  */
-function _webform_edit_node_reference(array $component) {
+function _webform_edit_term_reference(array $component) {
   $form = array();
+  $voc_keys = array();
+  foreach (taxonomy_get_vocabularies() as $vid => $vocab) {
+    $voc_keys[$vid] = $vocab->name;
+  }
   $form['extra']['referenceable_types'] = array(
-    '#type' => 'checkboxes',
-    '#title' => t('Content types that can be referenced'),
-    '#multiple' => TRUE,
+    '#type' => 'select',
+    '#title' => t('Select Vocabularies that can be referenced'),
+    '#multiple' => FALSE,
     '#default_value' => $component['extra']['referenceable_types'],
-    '#options' => node_type_get_names(),
+    '#options' => $voc_keys,
     '#required' => TRUE,
   );
   $form['extra']['widget_type'] = array(
@@ -93,12 +97,12 @@ function _webform_edit_node_reference(array $component) {
  *
  * @see _webform_client_form_add_component()
  */
-function _webform_render_node_reference(array $component, array $value = NULL, $filter = TRUE) {
+function _webform_render_term_reference(array $component, array $value = NULL, $filter = TRUE) {
   switch ($component['extra']['widget_type']) {
     case 'autocomplete':
       $form_item = array(
         '#type' => 'textfield',
-        '#autocomplete_path' => 'webform_references/node/autocomplete/' . implode('+', array_filter($component['extra']['referenceable_types'])),
+        '#autocomplete_path' => 'webform_references/term/autocomplete/' . $component['extra']['referenceable_types'],
         '#description' => $filter ? _webform_filter_descriptions($component['extra']['description']) : $component['extra']['description'],
         '#required'         => $component['required'] || $component['mandatory'],
         // Either one being true will could as required...
@@ -106,13 +110,13 @@ function _webform_render_node_reference(array $component, array $value = NULL, $
         '#title' => $filter ? _webform_filter_xss($component['name']) : $component['name'],
         '#title_display' => $component['extra']['title_display'] ? $component['extra']['title_display'] : 'before',
         '#weight' => $component['weight'],
-        '#element_validate' => array('webform_references_validate_node_reference'),
+        '#element_validate' => array('webform_references_validate_term_reference'),
         '#theme_wrappers' => array('webform_element'),
       );
       break;
 
     default:
-      $node_list = _webform_references_get_node_list($component['extra']['referenceable_types']);
+      $term_list = _webform_references_get_term_list($component['extra']['referenceable_types']);
       $form_item = array(
         '#type' => 'select',
         '#description' => $filter ? _webform_filter_descriptions($component['extra']['description']) : $component['extra']['description'],
@@ -121,7 +125,7 @@ function _webform_render_node_reference(array $component, array $value = NULL, $
         // because webform changed in 4.x-alpha8.
         '#title' => $filter ? _webform_filter_xss($component['name']) : $component['name'],
         '#title_display' => $component['extra']['title_display'] ? $component['extra']['title_display'] : 'before',
-        '#options' => $node_list,
+        '#options' => $term_list,
         '#weight' => $component['weight'],
         '#multiple' => $component['extra']['multiple'],
         '#theme_wrappers' => array('webform_element'),
@@ -132,42 +136,15 @@ function _webform_render_node_reference(array $component, array $value = NULL, $
 }
 
 /**
- * Validation Callback for node reference field.
+ * Validation Callback for term reference field.
  */
-function webform_references_validate_node_reference($element, $form_state) {
-  $value = $element['#value'];
-  $nid = NULL;
-  if (!empty($value)) {
-    preg_match('/^(?:\s*|(.*) )?\[\s*id\s*:\s*(\d+)\s*\]$/', $value, $matches);
-    if (!empty($matches)) {
-      list(, $title, $nid) = $matches;
-      if (!empty($title)) {
-        $real_title = db_select('node', 'n')
-          ->fields('n', array('title'))
-          ->condition('n.nid', $nid)
-          ->addTag('node_access')
-          ->execute()
-          ->fetchField();
-        if (trim($title) != trim($real_title)) {
-          form_error($element, t('Please check your selection.'));
-        }
-      }
-    }
-    else {
-      $options = array(
-        'string' => $value,
-        'match' => 'equals',
-        'limit' => 1,
-      );
-      $bundle_args = explode('/', $element['#autocomplete_path']);
-      $bundles = (isset($bundle_args[2])) ? $bundle_args[2] : array();
-      $references = webform_references_potential_references($bundles, $options);
-      if ($references) {
-        $nid = key($references);
-      }
-      else {
-        form_error($element, t('Please check your selection.'));
-      }
+function webform_references_validate_term_reference($element, $form_state) {
+  $term_name = $element['#value'];
+  if ($term_name != '') {
+    $vid = $element['#webform_component']['extra']['referenceable_types'];
+    $tid = _webform_references_get_term_tid($term_name, $vid);
+    if (!$tid) {
+      form_error($element, t('Please check your selection.'));
     }
   }
 }
@@ -186,13 +163,10 @@ function webform_references_validate_node_reference($element, $form_state) {
  * @return string
  *   A string of value to be saved into the database.
  */
-function _webform_submit_node_reference(array $component, $value) {
+function _webform_submit_term_reference(array $component, $value) {
   if ($component['extra']['widget_type'] == 'autocomplete') {
-    preg_match('/^(?:\s*|(.*) )?\[\s*id\s*:\s*(\d+)\s*\]$/', $value, $matches);
-    if (!empty($matches)) {
-      list(, , $nid) = $matches;
-      $value = $nid;
-    }
+    $vid = $component['extra']['referenceable_types'];
+    $value = _webform_references_get_term_tid($value, $vid);
   }
   return $value;
 }
@@ -200,8 +174,8 @@ function _webform_submit_node_reference(array $component, $value) {
 /**
  * Implements _webform_theme_component().
  */
-function _webform_theme_node_reference() {
-  return array('webform_display_node_reference_field' => array('render element' => 'element'));
+function _webform_theme_term_reference() {
+  return array('webform_display_term_reference_field' => array('render element' => 'element'));
 }
 
 /**
@@ -232,11 +206,11 @@ function _webform_theme_node_reference() {
  *   which will properly format the label and content for use within an e-mail
  *   (such as wrapping the text) or as HTML (ensuring consistent output).
  */
-function _webform_display_node_reference(array $component, $value, $format = 'html') {
+function _webform_display_term_reference(array $component, $value, $format = 'html') {
   return array(
     '#title'          => $component['name'],
     '#weight'         => $component['weight'],
-    '#theme'          => 'webform_display_node_reference_field',
+    '#theme'          => 'webform_display_term_reference_field',
     '#theme_wrappers' => $format == 'html' ? array('webform_element') : array('webform_element_text'),
     '#post_render'    => array('webform_element_wrapper'),
     '#component'      => $component,
@@ -248,47 +222,30 @@ function _webform_display_node_reference(array $component, $value, $format = 'ht
 /**
  * Format the output of data for this component.
  */
-function theme_webform_display_node_reference_field($variables) {
+function theme_webform_display_term_reference_field($variables) {
   $element = $variables['element'];
   $items = array();
   foreach ((array) $element['#value'] as $value) {
-    $nid = check_plain($value);
-    $items[] = _webform_references_get_node_title($nid, TRUE);
+    $tid = check_plain($value);
+    if ($tid) {
+      $items[] = _webform_references_get_term_name($tid, TRUE);
+    }
   }
   $output = count($items) > 1 ? theme('item_list', array('items' => $items)) : (isset($items[0]) ? $items[0] : '');
   return $output;
 }
 
 /**
- * Helper function to get title of node.
- *
- * @param int $nid
- *   Node Id.
- * @param bool $link
- *   FALSE for plain text and TRUE for linked text.
- *
- * @return string
- *   Title of the node (Linked if $link parameter is set to TRUE).
- */
-function _webform_references_get_node_title($nid, $link = FALSE) {
-  $node_items = db_select('node', 'n')
-    ->fields('n', array('title'))
-    ->condition('nid', $nid)
-    ->execute()
-    ->fetchAssoc();
-  $title = ($link == TRUE) ? l($node_items['title'], 'node/' . $nid) : check_plain($node_items['title']);
-  return $title;
-}
-
-/**
  * Implements _webform_table_component().
  */
-function _webform_table_node_reference(array $component, $value) {
+function _webform_table_term_reference(array $component, $value) {
   $value = (array) $value;
   $items = array();
 
-  foreach ($value as $nid) {
-    $items[] = _webform_references_get_node_title($nid);
+  foreach ($value as $tid) {
+    if ($tid) {
+      $items[] = _webform_references_get_term_name($tid, TRUE);
+    }
   }
   return (!empty($items)) ? implode('<br />', $items) : '';
 }
@@ -308,7 +265,7 @@ function _webform_table_node_reference(array $component, $value) {
  *   An array of data to be displayed in the first three rows of a CSV file, not
  *   including either prefixed or trailing commas.
  */
-function _webform_csv_headers_node_reference(array $component, array $export_options) {
+function _webform_csv_headers_term_reference(array $component, array $export_options) {
   $header = array();
   $header[0] = '';
   $header[1] = '';
@@ -334,11 +291,13 @@ function _webform_csv_headers_node_reference(array $component, array $export_opt
  * @return string
  *   A string of item to be added to the CSV file.
  */
-function _webform_csv_data_node_reference(array $component, array $export_options, $value) {
+function _webform_csv_data_term_reference(array $component, array $export_options, $value) {
   $return = array();
   $value = (array) $value;
-  foreach ($value as $nid) {
-    $return[] = _webform_references_get_node_title($nid);
+  foreach ($value as $tid) {
+    if ($tid) {
+      $return[] = _webform_references_get_term_name($tid);
+    }
   }
   return !empty($return) ? implode(', ', $return) : '';
 }
@@ -346,122 +305,98 @@ function _webform_csv_data_node_reference(array $component, array $export_option
 /**
  * Menu callback for the autocomplete results.
  */
-function webform_references_node_autocomplete($bundles, $string = '') {
+function webform_references_term_autocomplete($vid, $string = '') {
   $options = array(
     'string' => $string,
     'limit' => 10,
   );
-  $references = webform_references_node_potential_references($bundles, $options);
+  
+  $query = db_select('taxonomy_term_data', 't');
+  $query->addField('t', 'tid');
+  $term_title_alias = $query->addField('t', 'name', 'term_name');
+  $query->addTag('translatable')
+    ->addTag('term_access');
+  $query->condition('t.vid', $vid);
+  
+  if ($options['string'] !== '') {
+    $query->condition('t.name', '%' . $options['string'] . '%', 'LIKE');
+  }
+
+  if ($options['limit']) {
+    $query->range(0, $options['limit']);
+  }
+
+  $query->orderBy($term_title_alias);
+  $result = $query->execute()->fetchAll();
+  $references = array();
+  foreach ($result as $term) {
+    $references[] = array(
+      'name' => $term->term_name,
+    );
+  }
+
   $matches = array();
-  foreach ($references as $id => $row) {
-    // Markup is fine in autocompletion results (might happen when rendered
-    // through Views) but we want to remove hyperlinks.
-    $suggestion = preg_replace('/<a href="([^<]*)">([^<]*)<\/a>/', '$2', $row['rendered']);
+  foreach ($references as $row) {
     // Add a class wrapper for a few required CSS overrides.
-    $matches[$row['title'] . " [id:$id]"] = check_plain($suggestion);
+    $name = check_plain($row['name']);
+    $matches[$name] = check_plain($name);
   }
   drupal_json_output($matches);
 }
 
 /**
- * Retrieves an array of referenceable nodes.
- *
- * @param string $bundles
- *   List of content types separated by (+) sign to be referenced.
- * @param array $options
- *   An array of options to limit the scope of the returned list. The following
- *   key/value pairs are accepted:
- *   - string: string to filter titles on (used by autocomplete).
- *   - ids: array of specific node ids to lookup.
- *   - limit: maximum size of the the result set. Defaults to 0 (no limit).
- *
- * @return array
- *   An array of valid nodes in the form:
- *   array(
- *     nid => array(
- *       'title' => The node title,
- *       'rendered' => The text to display in widgets (can be HTML)
- *     ),
- *     ...
- *   )
+ * Helper function to get term list.
  */
-function webform_references_node_potential_references($bundles, $options = array()) {
-  $options += array(
-    'string' => '',
-    'ids' => array(),
-    'limit' => 0,
-  );
-  $results = &drupal_static(__FUNCTION__, array());
-  // Create unique id for static cache.
-  $cid = ($options['string'] !== '' ? $options['string'] : implode('-', $options['ids']))
-    . ':' . $options['limit'];
-  if (!isset($results[$cid])) {
-    $references = _webform_references_node_potential_references_standard($bundles, $options);
-    // Store the results.
-    $results[$cid] = !empty($references) ? $references : array();
-  }
-  return $results[$cid];
-}
-
-/**
- * Helper function for webform_references_node_potential_references().
- *
- * List of referenceable nodes defined by content types.
- */
-function _webform_references_node_potential_references_standard($bundles, $options) {
-  $bundles_array = explode('+', $bundles);
-  if (!count($bundles_array)) {
-    return array();
-  }
-  $query = db_select('node', 'n');
-  $query->addField('n', 'nid');
-  $node_title_alias = $query->addField('n', 'title', 'node_title');
-  $node_type_alias = $query->addField('n', 'type', 'node_type');
-  $query->addTag('node_access')
-    ->addMetaData('id', ' _webform_references_node_potential_references_standard')
-    ->addMetaData('options', $options);
-  $query->condition('n.status', NODE_PUBLISHED);
-  if (is_array($bundles_array)) {
-    $query->condition('n.type', $bundles_array, 'IN');
-  }
-  if ($options['string'] !== '') {
-    $query->condition('n.title', '%' . $options['string'] . '%', 'LIKE');
-  }
-  if ($options['ids']) {
-    $query->condition('n.nid', $options['ids'], 'IN');
-  }
-  if ($options['limit']) {
-    $query->range(0, $options['limit']);
-  }
-  $query
-    ->orderBy($node_title_alias)
-    ->orderBy($node_type_alias);
-  $result = $query->execute()->fetchAll();
-  $references = array();
-  foreach ($result as $node) {
-    $references[$node->nid] = array(
-      'title' => $node->node_title,
-      'rendered' => $node->node_title,
-    );
-  }
-  return $references;
-}
-
-/**
- * Helper function to get node list.
- */
-function _webform_references_get_node_list($types) {
-  $result = db_select('node', 'n')
-    ->fields('n', array('nid', 'title'))
-    ->condition('n.type', $types, 'IN')
-    ->condition('n.status', NODE_PUBLISHED)
-    ->addTag('node_access')
+function _webform_references_get_term_list($vid) {
+  $result = db_select('taxonomy_term_data', 't')
+    ->fields('t', array('tid', 'name'))
+    ->condition('t.vid', $vid)
+    ->addTag('translatable')
+    ->addTag('term_access')
     ->execute()
     ->fetchAll();
-  $node_list = array();
-  $node_list[0] = 'No Value';
-  foreach ($result as $content) {
-    $node_list[$content->nid] = $content->title;
+  $term_list = array();
+  $term_list[0] = 'No Value';
+  foreach ($result as $term) {
+    $term_list[$term->tid] = $term->name;
   }
-  return $node_list;
+  return $term_list;
+}
+
+/**
+ * Helper function to get title of term.
+ *
+ * @param int $tid
+ *   Term Id.
+ * @param bool $link
+ *   FALSE for plain text and TRUE for linked text.
+ *
+ * @return string
+ *   Name of the term (Linked if $link parameter is set to TRUE).
+ */
+function _webform_references_get_term_name($tid, $link = FALSE) {
+  $term = taxonomy_term_load($tid);
+  $name = ($link == TRUE) ? l($term->name, 'taxonomy/term/' . $tid) : check_plain($term->name);
+  return $name;
+}
+
+/**
+ * Helper function to get tid of term.
+ *
+ * @param string $term_name
+ *   Term Name.
+ * @param bool $link
+ *   FALSE for plain text and TRUE for linked text.
+ *
+ * @return int
+ *   Tid of the term.
+ */
+function _webform_references_get_term_tid($term_name, $vid) {
+  $tid = db_select('taxonomy_term_data', 't')
+    ->fields('t', array('tid'))
+    ->condition('t.name', $term_name)
+    ->condition('t.vid', $vid)
+    ->execute()
+    ->fetchField();
+  return $tid;
 }

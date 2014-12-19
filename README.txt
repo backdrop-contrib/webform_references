@@ -11,11 +11,11 @@ CONTENTS OF THIS FILE
 
 INTRODUCTION
 ------------
-Provides a webform component that can reference a node in webform. Currently,
-the module includes node reference component only.
+Provides a webform component that can reference a node/term in webform. Currently,
+the module includes node and term reference components.
 It provides "Select List" and "Autocomplete" as widget.
 
-User and term reference will be added later.
+User reference will be added later.
 
 
 REQUIREMENTS
