@@ -113,6 +113,10 @@ function _webform_render_term_reference(array $component, array $value = NULL, $
         '#element_validate' => array('webform_references_validate_term_reference'),
         '#theme_wrappers' => array('webform_element'),
       );
+      if (isset($value)) {
+        $selected_term = taxonomy_term_load($value[0]);
+        $form_item['#default_value'] = ($selected_term) ? $selected_term->name : '';
+      }
       break;
 
     default:
@@ -130,6 +134,9 @@ function _webform_render_term_reference(array $component, array $value = NULL, $
         '#multiple' => $component['extra']['multiple'],
         '#theme_wrappers' => array('webform_element'),
       );
+      if (isset($value)) {
+        $form_item['#default_value'] = $value;
+      }
       break;
   }
   return $form_item;

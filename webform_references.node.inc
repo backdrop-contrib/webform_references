@@ -109,6 +109,10 @@ function _webform_render_node_reference(array $component, array $value = NULL, $
         '#element_validate' => array('webform_references_validate_node_reference'),
         '#theme_wrappers' => array('webform_element'),
       );
+      if (isset($value)) {
+        $selected_node = node_load($value[0]);
+        $form_item['#default_value'] = ($selected_node) ? $selected_node->title . " [id:$selected_node->nid]" : '';
+      }
       break;
 
     default:
@@ -126,6 +130,9 @@ function _webform_render_node_reference(array $component, array $value = NULL, $
         '#multiple' => $component['extra']['multiple'],
         '#theme_wrappers' => array('webform_element'),
       );
+      if (isset($value)) {
+        $form_item['#default_value'] = $value;
+      }
       break;
   }
   return $form_item;
