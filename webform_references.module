@@ -25,6 +25,14 @@ function webform_references_menu() {
     'file' => 'webform_references.term.inc',
     'file path' => drupal_get_path('module', 'webform_references'),
   );
+  $items['webform_references/user/autocomplete/%'] = array(
+    'page callback' => 'webform_references_user_autocomplete',
+    'page arguments' => array(3),
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+    'file' => 'webform_references.user.inc',
+    'file path' => drupal_get_path('module', 'webform_references'),
+  );
   return $items;
 }
 
@@ -74,6 +82,12 @@ function webform_references_webform_component_info() {
     'description' => t('Term Reference field.'),
     'features'    => $features,
     'file'        => 'webform_references.term.inc',
+  );
+  $components['user_reference'] = array(
+    'label'       => t('User Reference'),
+    'description' => t('User Reference field.'),
+    'features'    => $features,
+    'file'        => 'webform_references.user.inc',
   );
   return $components;
 }
