@@ -466,7 +466,7 @@ function _webform_references_get_node_list($types) {
     ->execute()
     ->fetchAll();
   $node_list = array();
-  $node_list[0] = 'No Value';
+  $node_list[0] = t('No Value');
   foreach ($result as $content) {
     $node_list[$content->nid] = $content->title;
   }

@@ -363,7 +363,7 @@ function _webform_references_get_term_list($vid) {
     ->execute()
     ->fetchAll();
   $term_list = array();
-  $term_list[0] = 'No Value';
+  $term_list[0] = t('No Value');
   foreach ($result as $term) {
     $term_list[$term->tid] = $term->name;
   }
