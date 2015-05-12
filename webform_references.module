@@ -95,8 +95,8 @@ function webform_references_webform_component_info() {
 /**
  * Implements hook_system_info_alter().
  *
- * Add warning message to module info description if node_reference component
- * is added in any webform.
+ * Add warning message to module info description if any component
+ * of this module is added in any webform.
  */
 function webform_references_system_info_alter(&$info, $file, $type) {
   if ($type == 'module' && $file->name == 'webform_references') {
