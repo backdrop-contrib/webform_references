@@ -102,10 +102,10 @@ function webform_references_system_info_alter(&$info, $file, $type) {
   if ($type == 'module' && $file->name == 'webform_references') {
     $result = db_select('webform_component', 'wc')
       ->fields('wc', array('name'))
-      ->condition('wc.type', array('node_reference', 'term_reference'), 'IN')
+      ->condition('wc.type', array('node_reference', 'term_reference', 'user_reference'), 'IN')
       ->execute()->fetchAll();
     if (!empty($result)) {
-      $info['description'] = t("Defines a webform component type for referencing the nodes. <span class='error'>(Warning: Don't disable/uninstall the module because the node_reference type component is already in use.)</span>");
+      $info['description'] = t("Defines a webform component type for referencing the node/term/user. <span class='error'>(Warning: Don't disable/uninstall the module because some components of this module are in used.)</span>");
     }
   }
 }
