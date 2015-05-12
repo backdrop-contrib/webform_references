@@ -1,5 +1,5 @@
-name = Webform Reference
-description = Defines a webform component type for referencing the nodes.
+name = Webform References
+description = Defines a webform component type for referencing the node/term/user.
 package = Webform
 core = 7.x
 
