@@ -1,7 +1,6 @@
 
 CONTENTS OF THIS FILE
 ---------------------
-   
  * Introduction
  * Requirements
  * Recommended modules
@@ -27,15 +26,15 @@ INSTALLATION
 * Install as usual,
 see https://www.drupal.org/documentation/install/modules-themes/modules-7.
 
-* Don't uninstall this module if the Node Reference component exists in any
-Webform otherwise it will give you error.
+* Don't uninstall this module if there is any "Reference" type of component exists in any
+Webform otherwise it will give you an error.
 
 
 CONFIGURATION
 -------------
 * Create any Webform using Admin > Content > Add Content > Webform.
 * Go to node/[webform_id]/webform.
-* You can see the "Node Reference" in the component list of webform.
+* You can see the "Node Reference", "Term Reference" and "User Reference" in the component list of webform.
 
 CONTACT
 -------
