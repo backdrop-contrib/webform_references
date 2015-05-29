@@ -130,6 +130,7 @@ function _webform_render_term_reference(array $component, array $value = NULL, $
         '#title' => $filter ? _webform_filter_xss($component['name']) : $component['name'],
         '#title_display' => $component['extra']['title_display'] ? $component['extra']['title_display'] : 'before',
         '#options' => $term_list,
+        '#empty_option' => t('No Value'),
         '#weight' => $component['weight'],
         '#multiple' => $component['extra']['multiple'],
         '#theme_wrappers' => array('webform_element'),
@@ -363,7 +364,6 @@ function _webform_references_get_term_list($vid) {
     ->execute()
     ->fetchAll();
   $term_list = array();
-  $term_list[0] = t('No Value');
   foreach ($result as $term) {
     $term_list[$term->tid] = $term->name;
   }

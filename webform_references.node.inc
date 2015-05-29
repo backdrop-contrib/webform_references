@@ -126,6 +126,7 @@ function _webform_render_node_reference(array $component, array $value = NULL, $
         '#title' => $filter ? _webform_filter_xss($component['name']) : $component['name'],
         '#title_display' => $component['extra']['title_display'] ? $component['extra']['title_display'] : 'before',
         '#options' => $node_list,
+        '#empty_option' => t('No Value'),
         '#weight' => $component['weight'],
         '#multiple' => $component['extra']['multiple'],
         '#theme_wrappers' => array('webform_element'),
@@ -466,7 +467,6 @@ function _webform_references_get_node_list($types) {
     ->execute()
     ->fetchAll();
   $node_list = array();
-  $node_list[0] = t('No Value');
   foreach ($result as $content) {
     $node_list[$content->nid] = $content->title;
   }
