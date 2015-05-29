@@ -12,7 +12,7 @@ CONTENTS OF THIS FILE
 INTRODUCTION
 ------------
 Provides a webform component to reference a node, term and user in webform.
-It provides "Select List" and "Autocomplete" as widget.
+It provides "Select List", "Autocomplete", "Checkbox" and "Radio" as widget.
 
 
 REQUIREMENTS
