@@ -62,7 +62,7 @@ function _webform_edit_term_reference(array $component) {
     '#title' => t('Field Type'),
     '#multiple' => FALSE,
     '#default_value' => $component['extra']['widget_type'],
-    '#options' => array('select' => t('Select List'), 'autocomplete' => t('Autocomplete')),
+    '#options' => array('select' => t('Select List'), 'checkbox_radio' => t('Checkbox/Radio'), 'autocomplete' => t('Autocomplete')),
     '#required' => TRUE,
   );
   $form['extra']['multiple'] = array(
@@ -72,8 +72,8 @@ function _webform_edit_term_reference(array $component) {
     '#description' => t('Check this option if the user should be allowed to choose multiple values.'),
     '#states' => array(
       // Display this field when the widget_type is select list.
-      'visible' => array(
-        ':input[name="extra[widget_type]"]' => array('value' => 'select'),
+      'invisible' => array(
+        ':input[name="extra[widget_type]"]' => array('value' => 'autocomplete'),
       ),
     ),
   );
@@ -116,6 +116,31 @@ function _webform_render_term_reference(array $component, array $value = NULL, $
       if (isset($value)) {
         $selected_term = taxonomy_term_load($value[0]);
         $form_item['#default_value'] = ($selected_term) ? $selected_term->name : '';
+      }
+      break;
+
+    case 'checkbox_radio':
+      $term_list = _webform_references_get_term_list($component['extra']['referenceable_types']);
+      $form_item = array(
+        '#type' => ($component['extra']['multiple']) ? 'checkboxes' : 'radios',
+        '#description' => $filter ? _webform_filter_descriptions($component['extra']['description']) : $component['extra']['description'],
+        '#required'         => $component['required'] || $component['mandatory'],
+        // Either one being true will could as required...
+        // because webform changed in 4.x-alpha8.
+        '#title' => $filter ? _webform_filter_xss($component['name']) : $component['name'],
+        '#title_display' => $component['extra']['title_display'] ? $component['extra']['title_display'] : 'before',
+        '#options' => $term_list,
+        '#weight' => $component['weight'],
+        '#multiple' => $component['extra']['multiple'],
+      );
+      $form_item['#theme_wrappers'] = array($form_item['#type']);
+      if (isset($value)) {
+        if ($form_item['#type'] == 'checkboxes') {
+          $form_item['#default_value'] = $value;
+        }
+        else {
+          $form_item['#default_value'] = $value[0];
+        }
       }
       break;
 
@@ -215,6 +240,7 @@ function _webform_theme_term_reference() {
  *   (such as wrapping the text) or as HTML (ensuring consistent output).
  */
 function _webform_display_term_reference(array $component, $value, $format = 'html') {
+  $value = (array) $value;
   return array(
     '#title'          => $component['name'],
     '#weight'         => $component['weight'],
@@ -223,7 +249,7 @@ function _webform_display_term_reference(array $component, $value, $format = 'ht
     '#post_render'    => array('webform_element_wrapper'),
     '#component'      => $component,
     '#format'         => $format,
-    '#value'          => (array) $value,
+    '#value'          => array_filter($value),
   );
 }
 
@@ -231,9 +257,9 @@ function _webform_display_term_reference(array $component, $value, $format = 'ht
  * Format the output of data for this component.
  */
 function theme_webform_display_term_reference_field($variables) {
-  $element = $variables['element'];
+  $values = (array) $variables['element']['#value'];
   $items = array();
-  foreach ((array) $element['#value'] as $value) {
+  foreach (array_filter($values) as $value) {
     $tid = check_plain($value);
     if ($tid) {
       $items[] = _webform_references_get_term_name($tid, TRUE);
@@ -250,7 +276,7 @@ function _webform_table_term_reference(array $component, $value) {
   $value = (array) $value;
   $items = array();
 
-  foreach ($value as $tid) {
+  foreach (array_filter($value) as $tid) {
     if ($tid) {
       $items[] = _webform_references_get_term_name($tid, TRUE);
     }
@@ -302,7 +328,7 @@ function _webform_csv_headers_term_reference(array $component, array $export_opt
 function _webform_csv_data_term_reference(array $component, array $export_options, $value) {
   $return = array();
   $value = (array) $value;
-  foreach ($value as $tid) {
+  foreach (array_filter($value) as $tid) {
     if ($tid) {
       $return[] = _webform_references_get_term_name($tid);
     }

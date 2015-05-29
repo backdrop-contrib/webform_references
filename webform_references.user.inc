@@ -59,7 +59,7 @@ function _webform_edit_user_reference(array $component) {
     '#title' => t('Field Type'),
     '#multiple' => FALSE,
     '#default_value' => $component['extra']['widget_type'],
-    '#options' => array('select' => t('Select List'), 'autocomplete' => t('Autocomplete')),
+    '#options' => array('select' => t('Select List'), 'checkbox_radio' => t('Checkbox/Radio'), 'autocomplete' => t('Autocomplete')),
     '#required' => TRUE,
   );
   $form['extra']['multiple'] = array(
@@ -69,8 +69,8 @@ function _webform_edit_user_reference(array $component) {
     '#description' => t('Check this option if the user should be allowed to choose multiple values.'),
     '#states' => array(
       // Display this field when the widget_type is select list.
-      'visible' => array(
-        ':input[name="extra[widget_type]"]' => array('value' => 'select'),
+      'invisible' => array(
+        ':input[name="extra[widget_type]"]' => array('value' => 'autocomplete'),
       ),
     ),
   );
@@ -113,6 +113,31 @@ function _webform_render_user_reference(array $component, array $value = NULL, $
       if (isset($value)) {
         $selected_user = user_load($value[0]);
         $form_item['#default_value'] = ($selected_user) ? $selected_user->name . " [id:$selected_user->uid]" : '';
+      }
+      break;
+
+    case 'checkbox_radio':
+      $user_list = _webform_references_get_user_list($component['extra']['referenceable_types']);
+      $form_item = array(
+        '#type' => ($component['extra']['multiple']) ? 'checkboxes' : 'radios',
+        '#description' => $filter ? _webform_filter_descriptions($component['extra']['description']) : $component['extra']['description'],
+        '#required'         => $component['required'] || $component['mandatory'],
+        // Either one being true will could as required...
+        // because webform changed in 4.x-alpha8.
+        '#title' => $filter ? _webform_filter_xss($component['name']) : $component['name'],
+        '#title_display' => $component['extra']['title_display'] ? $component['extra']['title_display'] : 'before',
+        '#options' => $user_list,
+        '#weight' => $component['weight'],
+        '#multiple' => $component['extra']['multiple'],
+      );
+      $form_item['#theme_wrappers'] = array($form_item['#type']);
+      if (isset($value)) {
+        if ($form_item['#type'] == 'checkboxes') {
+          $form_item['#default_value'] = $value;
+        }
+        else {
+          $form_item['#default_value'] = $value[0];
+        }
       }
       break;
 
@@ -228,6 +253,7 @@ function _webform_theme_user_reference() {
  *   (such as wrapping the text) or as HTML (ensuring consistent output).
  */
 function _webform_display_user_reference(array $component, $value, $format = 'html') {
+  $value = (array) $value;
   return array(
     '#title'          => $component['name'],
     '#weight'         => $component['weight'],
@@ -236,7 +262,7 @@ function _webform_display_user_reference(array $component, $value, $format = 'ht
     '#post_render'    => array('webform_element_wrapper'),
     '#component'      => $component,
     '#format'         => $format,
-    '#value'          => (array) $value,
+    '#value'          => array_filter($value),
   );
 }
 
@@ -244,9 +270,9 @@ function _webform_display_user_reference(array $component, $value, $format = 'ht
  * Format the output of data for this component.
  */
 function theme_webform_display_user_reference_field($variables) {
-  $element = $variables['element'];
+  $values = (array) $variables['element']['#value'];
   $items = array();
-  foreach ((array) $element['#value'] as $value) {
+  foreach (array_filter($values) as $value) {
     $uid = check_plain($value);
     $items[] = _webform_references_get_user_name($uid, TRUE);
   }
@@ -282,7 +308,7 @@ function _webform_table_user_reference(array $component, $value) {
   $value = (array) $value;
   $items = array();
 
-  foreach ($value as $uid) {
+  foreach (array_filter($value) as $uid) {
     $items[] = _webform_references_get_user_name($uid);
   }
   return (!empty($items)) ? implode('<br />', $items) : '';
@@ -332,7 +358,7 @@ function _webform_csv_headers_user_reference(array $component, array $export_opt
 function _webform_csv_data_user_reference(array $component, array $export_options, $value) {
   $return = array();
   $value = (array) $value;
-  foreach ($value as $uid) {
+  foreach (array_filter($value) as $uid) {
     $return[] = _webform_references_get_user_name($uid);
   }
   return !empty($return) ? implode(', ', $return) : '';
