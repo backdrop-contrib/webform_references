@@ -128,8 +128,9 @@ function _webform_render_node_reference(array $component, array $value = NULL, $
         '#options' => $node_list,
         '#multiple' => $component['extra']['multiple'],
         '#weight' => $component['weight'],
+        '#pre_render' => array(),
       );
-      $form_item['#theme_wrappers'] = array($form_item['#type']);
+      $form_item['#theme_wrappers'] = array($form_item['#type'], 'webform_element');
       if (isset($value)) {
         if ($form_item['#type'] == 'checkboxes') {
           $form_item['#default_value'] = $value;

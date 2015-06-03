@@ -129,8 +129,9 @@ function _webform_render_user_reference(array $component, array $value = NULL, $
         '#options' => $user_list,
         '#weight' => $component['weight'],
         '#multiple' => $component['extra']['multiple'],
+        '#pre_render' => array(),
       );
-      $form_item['#theme_wrappers'] = array($form_item['#type']);
+      $form_item['#theme_wrappers'] = array($form_item['#type'], 'webform_element');
       if (isset($value)) {
         if ($form_item['#type'] == 'checkboxes') {
           $form_item['#default_value'] = $value;
