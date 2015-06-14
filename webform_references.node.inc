@@ -24,6 +24,7 @@ function _webform_defaults_node_reference() {
       'referenceable_types' => array(),
       'widget_type' => '',
       'multiple' => NULL,
+      'sort' => array('sort_by' => 'nid', 'order' => 'ASC'),
     ),
   );
 }
@@ -66,6 +67,40 @@ function _webform_edit_node_reference(array $component) {
     '#title' => t('Multiple'),
     '#default_value' => $component['extra']['multiple'],
     '#description' => t('Check this option if the user should be allowed to choose multiple values.'),
+    '#states' => array(
+      // Display this field when the widget_type is select list.
+      'invisible' => array(
+        ':input[name="extra[widget_type]"]' => array('value' => 'autocomplete'),
+      ),
+    ),
+  );
+  $form['extra']['sort'] = array(
+    '#type' => 'container',
+    '#attributes' => array(
+      'class' => array('container-inline'),
+    ),
+  );
+  $form['extra']['sort']['sort_by'] = array(
+    '#type' => 'select',
+    '#title' => t('Sort By'),
+    '#multiple' => FALSE,
+    '#default_value' => $component['extra']['sort']['sort_by'],
+    '#options' => array('nid' => t('Node Id'), 'title' => t('Title')),
+    '#required' => TRUE,
+    '#states' => array(
+      // Display this field when the widget_type is select list.
+      'invisible' => array(
+        ':input[name="extra[widget_type]"]' => array('value' => 'autocomplete'),
+      ),
+    ),
+  );
+  $form['extra']['sort']['order'] = array(
+    '#type' => 'select',
+    '#title' => t('Order'),
+    '#multiple' => FALSE,
+    '#default_value' => $component['extra']['sort']['order'],
+    '#options' => array('ASC' => t('Ascending'), 'DESC' => t('Descending')),
+    '#required' => TRUE,
     '#states' => array(
       // Display this field when the widget_type is select list.
       'invisible' => array(
@@ -116,7 +151,7 @@ function _webform_render_node_reference(array $component, array $value = NULL, $
       break;
 
     case 'checkbox_radio':
-      $node_list = _webform_references_get_node_list($component['extra']['referenceable_types']);
+      $node_list = _webform_references_get_node_list($component['extra']['referenceable_types'], $component['extra']['sort']['sort_by'], $component['extra']['sort']['order']);
       $form_item = array(
         '#type' => ($component['extra']['multiple']) ? 'checkboxes' : 'radios',
         '#description' => $filter ? _webform_filter_descriptions($component['extra']['description']) : $component['extra']['description'],
@@ -142,7 +177,7 @@ function _webform_render_node_reference(array $component, array $value = NULL, $
       break;
 
     default:
-      $node_list = _webform_references_get_node_list($component['extra']['referenceable_types']);
+      $node_list = _webform_references_get_node_list($component['extra']['referenceable_types'], $component['extra']['sort']['sort_by'], $component['extra']['sort']['order']);
       $form_item = array(
         '#type' => 'select',
         '#description' => $filter ? _webform_filter_descriptions($component['extra']['description']) : $component['extra']['description'],
@@ -485,11 +520,12 @@ function _webform_references_node_potential_references_standard($bundles, $optio
 /**
  * Helper function to get node list.
  */
-function _webform_references_get_node_list($types) {
+function _webform_references_get_node_list($types, $sort_by = 'title', $order = 'ASC') {
   $result = db_select('node', 'n')
     ->fields('n', array('nid', 'title'))
     ->condition('n.type', $types, 'IN')
     ->condition('n.status', NODE_PUBLISHED)
+    ->orderBy($sort_by, $order)
     ->addTag('node_access')
     ->execute()
     ->fetchAll();

@@ -24,6 +24,7 @@ function _webform_defaults_user_reference() {
       'referenceable_types' => array(),
       'widget_type' => '',
       'multiple' => NULL,
+      'sort' => array('sort_by' => 'uid', 'order' => 'ASC'),
     ),
   );
 }
@@ -74,6 +75,40 @@ function _webform_edit_user_reference(array $component) {
       ),
     ),
   );
+  $form['extra']['sort'] = array(
+    '#type' => 'container',
+    '#attributes' => array(
+      'class' => array('container-inline'),
+    ),
+  );
+  $form['extra']['sort']['sort_by'] = array(
+    '#type' => 'select',
+    '#title' => t('Sort By'),
+    '#multiple' => FALSE,
+    '#default_value' => $component['extra']['sort']['sort_by'],
+    '#options' => array('uid' => t('User Id'), 'name' => t('User Name')),
+    '#required' => TRUE,
+    '#states' => array(
+      // Display this field when the widget_type is select list.
+      'invisible' => array(
+        ':input[name="extra[widget_type]"]' => array('value' => 'autocomplete'),
+      ),
+    ),
+  );
+  $form['extra']['sort']['order'] = array(
+    '#type' => 'select',
+    '#title' => t('Order'),
+    '#multiple' => FALSE,
+    '#default_value' => $component['extra']['sort']['order'],
+    '#options' => array('ASC' => t('Ascending'), 'DESC' => t('Descending')),
+    '#required' => TRUE,
+    '#states' => array(
+      // Display this field when the widget_type is select list.
+      'invisible' => array(
+        ':input[name="extra[widget_type]"]' => array('value' => 'autocomplete'),
+      ),
+    ),
+  );
   return $form;
 }
 
@@ -117,7 +152,7 @@ function _webform_render_user_reference(array $component, array $value = NULL, $
       break;
 
     case 'checkbox_radio':
-      $user_list = _webform_references_get_user_list($component['extra']['referenceable_types']);
+      $user_list = _webform_references_get_user_list($component['extra']['referenceable_types'], NULL, $component['extra']['sort']['sort_by'], $component['extra']['sort']['order']);
       $form_item = array(
         '#type' => ($component['extra']['multiple']) ? 'checkboxes' : 'radios',
         '#description' => $filter ? _webform_filter_descriptions($component['extra']['description']) : $component['extra']['description'],
@@ -143,7 +178,7 @@ function _webform_render_user_reference(array $component, array $value = NULL, $
       break;
 
     default:
-      $user_list = _webform_references_get_user_list($component['extra']['referenceable_types']);
+      $user_list = _webform_references_get_user_list($component['extra']['referenceable_types'], NULL, $component['extra']['sort']['sort_by'], $component['extra']['sort']['order']);
       $form_item = array(
         '#type' => 'select',
         '#description' => $filter ? _webform_filter_descriptions($component['extra']['description']) : $component['extra']['description'],
@@ -389,7 +424,7 @@ function webform_references_user_autocomplete($bundles, $string = '') {
 /**
  * Helper function to get user list.
  */
-function _webform_references_get_user_list($roles, $string = '') {
+function _webform_references_get_user_list($roles, $string = '', $sort_by = 'uid', $order = 'ASC') {
   $roles = array_filter($roles);
   $query = db_select('users', 'u');
   $query->fields('u', array('uid', 'name'));
@@ -400,6 +435,9 @@ function _webform_references_get_user_list($roles, $string = '') {
   if ($string != '') {
     $query->condition('u.name', '%' . $string . '%', 'LIKE');
     $query->range(0, 10);
+  }
+  else {
+    $query->orderBy($sort_by, $order);
   }
   $query->condition('u.status', 1);
   $results = $query->execute()->fetchAll();

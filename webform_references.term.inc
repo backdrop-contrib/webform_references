@@ -24,6 +24,7 @@ function _webform_defaults_term_reference() {
       'referenceable_types' => array(),
       'widget_type' => '',
       'multiple' => NULL,
+      'sort' => array('sort_by' => 'name', 'order' => 'ASC'),
     ),
   );
 }
@@ -77,6 +78,40 @@ function _webform_edit_term_reference(array $component) {
       ),
     ),
   );
+  $form['extra']['sort'] = array(
+    '#type' => 'container',
+    '#attributes' => array(
+      'class' => array('container-inline'),
+    ),
+  );
+  $form['extra']['sort']['sort_by'] = array(
+    '#type' => 'select',
+    '#title' => t('Sort By'),
+    '#multiple' => FALSE,
+    '#default_value' => $component['extra']['sort']['sort_by'],
+    '#options' => array('tid' => t('Term Id'), 'name' => t('Term Name')),
+    '#required' => TRUE,
+    '#states' => array(
+      // Display this field when the widget_type is select list.
+      'invisible' => array(
+        ':input[name="extra[widget_type]"]' => array('value' => 'autocomplete'),
+      ),
+    ),
+  );
+  $form['extra']['sort']['order'] = array(
+    '#type' => 'select',
+    '#title' => t('Order'),
+    '#multiple' => FALSE,
+    '#default_value' => $component['extra']['sort']['order'],
+    '#options' => array('ASC' => t('Ascending'), 'DESC' => t('Descending')),
+    '#required' => TRUE,
+    '#states' => array(
+      // Display this field when the widget_type is select list.
+      'invisible' => array(
+        ':input[name="extra[widget_type]"]' => array('value' => 'autocomplete'),
+      ),
+    ),
+  );
   return $form;
 }
 
@@ -120,7 +155,7 @@ function _webform_render_term_reference(array $component, array $value = NULL, $
       break;
 
     case 'checkbox_radio':
-      $term_list = _webform_references_get_term_list($component['extra']['referenceable_types']);
+      $term_list = _webform_references_get_term_list($component['extra']['referenceable_types'], $component['extra']['sort']['sort_by'], $component['extra']['sort']['order']);
       $form_item = array(
         '#type' => ($component['extra']['multiple']) ? 'checkboxes' : 'radios',
         '#description' => $filter ? _webform_filter_descriptions($component['extra']['description']) : $component['extra']['description'],
@@ -146,7 +181,7 @@ function _webform_render_term_reference(array $component, array $value = NULL, $
       break;
 
     default:
-      $term_list = _webform_references_get_term_list($component['extra']['referenceable_types']);
+      $term_list = _webform_references_get_term_list($component['extra']['referenceable_types'], $component['extra']['sort']['sort_by'], $component['extra']['sort']['order']);
       $form_item = array(
         '#type' => 'select',
         '#description' => $filter ? _webform_filter_descriptions($component['extra']['description']) : $component['extra']['description'],
@@ -382,10 +417,11 @@ function webform_references_term_autocomplete($vid, $string = '') {
 /**
  * Helper function to get term list.
  */
-function _webform_references_get_term_list($vid) {
+function _webform_references_get_term_list($vid, $sort_by = 'name', $order = 'ASC') {
   $result = db_select('taxonomy_term_data', 't')
     ->fields('t', array('tid', 'name'))
     ->condition('t.vid', $vid)
+    ->orderBy($sort_by, $order)
     ->addTag('translatable')
     ->addTag('term_access')
     ->execute()
