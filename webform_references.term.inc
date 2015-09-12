@@ -89,7 +89,7 @@ function _webform_edit_term_reference(array $component) {
     '#title' => t('Sort By'),
     '#multiple' => FALSE,
     '#default_value' => $component['extra']['sort']['sort_by'],
-    '#options' => array('tid' => t('Term Id'), 'name' => t('Term Name')),
+    '#options' => array('tid' => t('Term Id'), 'name' => t('Term Name'), 'weight' => t('Term Weight')),
     '#required' => TRUE,
     '#states' => array(
       // Display this field when the widget_type is select list.
