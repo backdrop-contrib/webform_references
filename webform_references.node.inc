@@ -230,7 +230,7 @@ function webform_references_validate_node_reference($element, $form_state) {
       );
       $bundle_args = explode('/', $element['#autocomplete_path']);
       $bundles = (isset($bundle_args[2])) ? $bundle_args[2] : array();
-      $references = webform_references_potential_references($bundles, $options);
+      $references = webform_references_node_potential_references($bundles, $options);
       if ($references) {
         $nid = key($references);
       }
