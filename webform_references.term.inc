@@ -24,6 +24,7 @@ function _webform_defaults_term_reference() {
       'referenceable_types' => array(),
       'widget_type' => '',
       'multiple' => NULL,
+      'tree' => NULL,
       'sort' => array('sort_by' => 'name', 'order' => 'ASC'),
     ),
   );
@@ -75,6 +76,18 @@ function _webform_edit_term_reference(array $component) {
       // Display this field when the widget_type is select list.
       'invisible' => array(
         ':input[name="extra[widget_type]"]' => array('value' => 'autocomplete'),
+      ),
+    ),
+  );
+  $form['extra']['tree'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Tree'),
+    '#default_value' => $component['extra']['tree'],
+    '#description' => t('Check this option to display tree structure for taxonomy terms.'),
+    '#states' => array(
+      // Display this field when the widget_type is select list.
+      'visible' => array(
+        ':input[name="extra[widget_type]"]' => array('value' => 'select'),
       ),
     ),
   );
@@ -181,7 +194,7 @@ function _webform_render_term_reference(array $component, array $value = NULL, $
       break;
 
     default:
-      $term_list = _webform_references_get_term_list($component['extra']['referenceable_types'], $component['extra']['sort']['sort_by'], $component['extra']['sort']['order']);
+      $term_list = _webform_references_get_term_list($component['extra']['referenceable_types'], $component['extra']['sort']['sort_by'], $component['extra']['sort']['order'], $component['extra']['tree']);
       $form_item = array(
         '#type' => 'select',
         '#description' => $filter ? _webform_filter_descriptions($component['extra']['description']) : $component['extra']['description'],
@@ -417,18 +430,12 @@ function webform_references_term_autocomplete($vid, $string = '') {
 /**
  * Helper function to get term list.
  */
-function _webform_references_get_term_list($vid, $sort_by = 'name', $order = 'ASC') {
-  $result = db_select('taxonomy_term_data', 't')
-    ->fields('t', array('tid', 'name'))
-    ->condition('t.vid', $vid)
-    ->orderBy($sort_by, $order)
-    ->addTag('translatable')
-    ->addTag('term_access')
-    ->execute()
-    ->fetchAll();
+function _webform_references_get_term_list($vid, $sort_by = 'name', $order = 'ASC', $tree = FALSE) {
   $term_list = array();
-  foreach ($result as $term) {
-    $term_list[$term->tid] = $term->name;
+  $terms = taxonomy_get_tree($vid);
+  foreach ($terms as $term) {
+    $prefix = ($tree) ? str_repeat('-', $term->depth) : '';
+    $term_list[$term->tid] = $prefix . $term->name;
   }
   return $term_list;
 }
