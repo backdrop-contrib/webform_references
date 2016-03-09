@@ -109,3 +109,20 @@ function webform_references_system_info_alter(&$info, $file, $type) {
     }
   }
 }
+
+/**
+ * Implements hook_webform_validator_alter().
+ */
+function webform_references_webform_validator_alter(&$validators) {
+  $allowed_validators = array(
+    'specific_value',
+    'unique',
+    'equal',
+    'comparison',
+  );
+  foreach ($allowed_validators as $validator) {
+    $validators[$validator]['component_types'][] = 'node_reference';
+    $validators[$validator]['component_types'][] = 'term_reference';
+    $validators[$validator]['component_types'][] = 'user_reference';
+  }
+}
