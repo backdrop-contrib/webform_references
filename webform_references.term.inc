@@ -443,9 +443,7 @@ function webform_references_term_autocomplete($vid, $string = '') {
 
   $matches = array();
   foreach ($references as $row) {
-    // Add a class wrapper for a few required CSS overrides.
-    $name = check_plain($row['name']);
-    $matches[$name] = check_plain($name);
+    $matches[$name] = check_plain($row['name']);
   }
   drupal_json_output($matches);
 }

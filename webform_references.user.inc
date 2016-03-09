@@ -442,7 +442,7 @@ function webform_references_user_autocomplete($bundles, $string = '') {
   $references = _webform_references_get_user_list($roles, $string);
   $matches = array();
   foreach ($references as $id => $name) {
-    $matches[$name . " [id:$id]"] = $name;
+    $matches[$name . " [id:$id]"] = check_plain($name);
   }
   drupal_json_output($matches);
 }
