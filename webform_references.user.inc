@@ -356,7 +356,10 @@ function _webform_references_get_user_name($uid, $link = FALSE) {
     ->condition('uid', $uid)
     ->execute()
     ->fetchAssoc();
-  $name = ($link == TRUE) ? l($user_items['name'], 'user/' . $uid) : check_plain($user_items['name']);
+  $name = NULL;
+  if (!empty($user_items)) {
+    $name = ($link == TRUE) ? l($user_items['name'], 'user/' . $uid) : check_plain($user_items['name']);
+  }
   return $name;
 }
 

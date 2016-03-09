@@ -475,8 +475,10 @@ function _webform_references_get_term_list($vid, $sort_by = 'name', $order = 'AS
  *   Name of the term (Linked if $link parameter is set to TRUE).
  */
 function _webform_references_get_term_name($tid, $link = FALSE) {
-  $term = taxonomy_term_load($tid);
-  $name = ($link == TRUE) ? l($term->name, 'taxonomy/term/' . $tid) : check_plain($term->name);
+  $name = NULL;
+  if ($term = taxonomy_term_load($tid)) {
+    $name = ($link == TRUE) ? l($term->name, 'taxonomy/term/' . $term->tid) : check_plain($term->name);
+  }
   return $name;
 }
 
