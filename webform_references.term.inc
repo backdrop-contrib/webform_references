@@ -19,6 +19,7 @@ function _webform_defaults_term_reference() {
     'extra' => array(
       'title_display' => 0,
       'private' => FALSE,
+      'default_value' => NULL,
       'attributes' => array(),
       'description' => '',
       'referenceable_types' => array(),
@@ -59,6 +60,12 @@ function _webform_edit_term_reference(array $component) {
     '#options' => $voc_keys,
     '#required' => TRUE,
   );
+  $form['extra']['default_value'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Default value'),
+    '#default_value' => $component['extra']['default_value'],
+    '#description' => t('The default value of the field.') . ' ' . theme('webform_token_help'),
+  );
   $form['extra']['widget_type'] = array(
     '#type' => 'select',
     '#title' => t('Field Type'),
@@ -73,7 +80,7 @@ function _webform_edit_term_reference(array $component) {
     '#default_value' => $component['extra']['multiple'],
     '#description' => t('Check this option if the user should be allowed to choose multiple values.'),
     '#states' => array(
-      // Display this field when the widget_type is select list.
+      // Hide this field when the widget_type is autocomplete.
       'invisible' => array(
         ':input[name="extra[widget_type]"]' => array('value' => 'autocomplete'),
       ),
@@ -105,7 +112,7 @@ function _webform_edit_term_reference(array $component) {
     '#options' => array('tid' => t('Term Id'), 'name' => t('Term Name'), 'weight' => t('Term Weight')),
     '#required' => TRUE,
     '#states' => array(
-      // Display this field when the widget_type is select list.
+      // Hide this field when the widget_type is autocomplete.
       'invisible' => array(
         ':input[name="extra[widget_type]"]' => array('value' => 'autocomplete'),
       ),
@@ -119,7 +126,7 @@ function _webform_edit_term_reference(array $component) {
     '#options' => array('ASC' => t('Ascending'), 'DESC' => t('Descending')),
     '#required' => TRUE,
     '#states' => array(
-      // Display this field when the widget_type is select list.
+      // Hide this field when the widget_type is autocomplete.
       'invisible' => array(
         ':input[name="extra[widget_type]"]' => array('value' => 'autocomplete'),
       ),
@@ -146,6 +153,7 @@ function _webform_edit_term_reference(array $component) {
  * @see _webform_client_form_add_component()
  */
 function _webform_render_term_reference(array $component, array $value = NULL, $filter = TRUE) {
+  $default_value = array ($filter ? webform_replace_tokens($component['extra']['default_value']) : $component['extra']['default_value']);
   switch ($component['extra']['widget_type']) {
     case 'autocomplete':
       $form_item = array(
@@ -163,6 +171,10 @@ function _webform_render_term_reference(array $component, array $value = NULL, $
       );
       if (isset($value)) {
         $selected_term = taxonomy_term_load($value[0]);
+        $form_item['#default_value'] = ($selected_term) ? $selected_term->name : '';
+      }
+      elseif (isset($default_value)) {
+        $selected_term = taxonomy_term_load($default_value[0]);
         $form_item['#default_value'] = ($selected_term) ? $selected_term->name : '';
       }
       break;
@@ -191,6 +203,14 @@ function _webform_render_term_reference(array $component, array $value = NULL, $
           $form_item['#default_value'] = $value[0];
         }
       }
+      elseif (isset($default_value)) {
+        if ($form_item['#type'] == 'checkboxes') {
+          $form_item['#default_value'] = $default_value;
+        }
+        else {
+          $form_item['#default_value'] = $default_value[0];
+        }
+      }
       break;
 
     default:
@@ -211,6 +231,9 @@ function _webform_render_term_reference(array $component, array $value = NULL, $
       );
       if (isset($value)) {
         $form_item['#default_value'] = $value;
+      }
+      elseif (isset($default_value)) {
+        $form_item['#default_value'] = $default_value;
       }
       break;
   }
@@ -393,14 +416,14 @@ function webform_references_term_autocomplete($vid, $string = '') {
     'string' => $string,
     'limit' => 10,
   );
-  
+
   $query = db_select('taxonomy_term_data', 't');
   $query->addField('t', 'tid');
   $term_title_alias = $query->addField('t', 'name', 'term_name');
   $query->addTag('translatable')
     ->addTag('term_access');
   $query->condition('t.vid', $vid);
-  
+
   if ($options['string'] !== '') {
     $query->condition('t.name', '%' . $options['string'] . '%', 'LIKE');
   }

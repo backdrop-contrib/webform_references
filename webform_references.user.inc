@@ -20,6 +20,7 @@ function _webform_defaults_user_reference() {
       'title_display' => 0,
       'private' => FALSE,
       'attributes' => array(),
+      'default_value' => NULL,
       'description' => '',
       'referenceable_types' => array(),
       'widget_type' => '',
@@ -55,6 +56,12 @@ function _webform_edit_user_reference(array $component) {
     '#options' => user_roles(TRUE),
     '#required' => TRUE,
   );
+  $form['extra']['default_value'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Default value'),
+    '#default_value' => $component['extra']['default_value'],
+    '#description' => t('The default value of the field.') . ' ' . theme('webform_token_help'),
+  );
   $form['extra']['widget_type'] = array(
     '#type' => 'select',
     '#title' => t('Field Type'),
@@ -69,7 +76,7 @@ function _webform_edit_user_reference(array $component) {
     '#default_value' => $component['extra']['multiple'],
     '#description' => t('Check this option if the user should be allowed to choose multiple values.'),
     '#states' => array(
-      // Display this field when the widget_type is select list.
+      // Hide this field when the widget_type is autocomplete.
       'invisible' => array(
         ':input[name="extra[widget_type]"]' => array('value' => 'autocomplete'),
       ),
@@ -89,7 +96,7 @@ function _webform_edit_user_reference(array $component) {
     '#options' => array('uid' => t('User Id'), 'name' => t('User Name')),
     '#required' => TRUE,
     '#states' => array(
-      // Display this field when the widget_type is select list.
+      // Hide this field when the widget_type is autocomplete.
       'invisible' => array(
         ':input[name="extra[widget_type]"]' => array('value' => 'autocomplete'),
       ),
@@ -103,7 +110,7 @@ function _webform_edit_user_reference(array $component) {
     '#options' => array('ASC' => t('Ascending'), 'DESC' => t('Descending')),
     '#required' => TRUE,
     '#states' => array(
-      // Display this field when the widget_type is select list.
+      // Hide this field when the widget_type is autocomplete.
       'invisible' => array(
         ':input[name="extra[widget_type]"]' => array('value' => 'autocomplete'),
       ),
@@ -130,6 +137,7 @@ function _webform_edit_user_reference(array $component) {
  * @see _webform_client_form_add_component()
  */
 function _webform_render_user_reference(array $component, array $value = NULL, $filter = TRUE) {
+  $default_value = array ($filter ? webform_replace_tokens($component['extra']['default_value']) : $component['extra']['default_value']);
   switch ($component['extra']['widget_type']) {
     case 'autocomplete':
       $form_item = array(
@@ -147,6 +155,10 @@ function _webform_render_user_reference(array $component, array $value = NULL, $
       );
       if (isset($value)) {
         $selected_user = user_load($value[0]);
+        $form_item['#default_value'] = ($selected_user) ? $selected_user->name . " [id:$selected_user->uid]" : '';
+      }
+      elseif (isset($default_value)){
+        $selected_user = user_load($default_value[0]);
         $form_item['#default_value'] = ($selected_user) ? $selected_user->name . " [id:$selected_user->uid]" : '';
       }
       break;
@@ -175,6 +187,14 @@ function _webform_render_user_reference(array $component, array $value = NULL, $
           $form_item['#default_value'] = $value[0];
         }
       }
+      elseif (isset($default_value)) {
+        if ($form_item['#type'] == 'checkboxes') {
+          $form_item['#default_value'] = $default_value;
+        }
+        else {
+          $form_item['#default_value'] = $default_value[0];
+        }
+      }
       break;
 
     default:
@@ -195,6 +215,9 @@ function _webform_render_user_reference(array $component, array $value = NULL, $
       );
       if (isset($value)) {
         $form_item['#default_value'] = $value;
+      }
+      elseif (isset($default_value)) {
+        $form_item['#default_value'] = $default_value;
       }
       break;
   }
