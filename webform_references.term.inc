@@ -168,6 +168,7 @@ function _webform_render_term_reference(array $component, array $value = NULL, $
         '#weight' => $component['weight'],
         '#element_validate' => array('webform_references_validate_term_reference'),
         '#theme_wrappers' => array('webform_element'),
+        '#translatable' => array('title', 'description'),
       );
       if (isset($value)) {
         $selected_term = taxonomy_term_load($value[0]);
@@ -193,6 +194,7 @@ function _webform_render_term_reference(array $component, array $value = NULL, $
         '#weight' => $component['weight'],
         '#multiple' => $component['extra']['multiple'],
         '#pre_render' => array(),
+        '#translatable' => array('title', 'description'),
       );
       $form_item['#theme_wrappers'] = array($form_item['#type'], 'webform_element');
       if (isset($value)) {
@@ -228,6 +230,7 @@ function _webform_render_term_reference(array $component, array $value = NULL, $
         '#weight' => $component['weight'],
         '#multiple' => $component['extra']['multiple'],
         '#theme_wrappers' => array('webform_element'),
+        '#translatable' => array('title', 'description'),
       );
       if (isset($value)) {
         $form_item['#default_value'] = $value;
