@@ -19,11 +19,12 @@ function _webform_defaults_term_reference() {
     'extra' => array(
       'title_display' => 0,
       'private' => FALSE,
-      'default_value' => NULL,
       'attributes' => array(),
+      'default_value' => NULL,
       'description' => '',
       'referenceable_types' => array(),
       'widget_type' => '',
+      'empty_option' => 'None',
       'multiple' => NULL,
       'tree' => NULL,
       'sort' => array('sort_by' => 'name', 'order' => 'ASC'),
@@ -73,6 +74,18 @@ function _webform_edit_term_reference(array $component) {
     '#default_value' => $component['extra']['widget_type'],
     '#options' => array('select' => t('Select List'), 'checkbox_radio' => t('Checkbox/Radio'), 'autocomplete' => t('Autocomplete')),
     '#required' => TRUE,
+  );
+  $form['extra']['empty_option'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Empty Option'),
+    '#default_value' => $component['extra']['empty_option'],
+    '#description' => t('Empty option value for select list.'),
+    '#states' => array(
+      'visible' => array(
+        ':input[name="extra[widget_type]"]' => array('value' => 'select'),
+        ':input[name="extra[multiple]"]' => array('checked' => FALSE),
+      ),
+    ),
   );
   $form['extra']['multiple'] = array(
     '#type' => 'checkbox',
@@ -226,7 +239,7 @@ function _webform_render_term_reference(array $component, array $value = NULL, $
         '#title' => $filter ? _webform_filter_xss($component['name']) : $component['name'],
         '#title_display' => $component['extra']['title_display'] ? $component['extra']['title_display'] : 'before',
         '#options' => $term_list,
-        '#empty_option' => t('No Value'),
+        '#empty_option' => (trim($component['extra']['empty_option']) != '') ? $component['extra']['empty_option'] : t('No Value'),
         '#weight' => $component['weight'],
         '#multiple' => $component['extra']['multiple'],
         '#theme_wrappers' => array('webform_element'),
