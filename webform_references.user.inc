@@ -160,6 +160,7 @@ function _webform_render_user_reference(array $component, array $value = NULL, $
         '#required'         => $component['required'] || $component['mandatory'],
         // Either one being true will could as required...
         // because webform changed in 4.x-alpha8
+        '#maxlength' => NULL,
         '#title' => $filter ? _webform_filter_xss($component['name']) : $component['name'],
         '#title_display' => $component['extra']['title_display'] ? $component['extra']['title_display'] : 'before',
         '#weight' => $component['weight'],
