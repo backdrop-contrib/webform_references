@@ -26,6 +26,9 @@ function _webform_defaults_user_reference() {
       'widget_type' => '',
       'empty_option' => 'None',
       'multiple' => NULL,
+      'use_view' => FALSE,
+      'reference_view' => NULL,
+      'view_args' => NULL,
       'sort' => array('sort_by' => 'uid', 'order' => 'ASC'),
     ),
   );
@@ -48,21 +51,6 @@ function _webform_defaults_user_reference() {
  */
 function _webform_edit_user_reference(array $component) {
   $form = array();
-  $form['extra']['referenceable_types'] = array(
-    '#type' => 'checkboxes',
-    '#title' => t('User with roles that can be referenced'),
-    '#description' => t('If "authenticated user" is selected then all the users will be displayed.'),
-    '#multiple' => TRUE,
-    '#default_value' => $component['extra']['referenceable_types'],
-    '#options' => user_roles(TRUE),
-    '#required' => TRUE,
-  );
-  $form['extra']['default_value'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Default value'),
-    '#default_value' => $component['extra']['default_value'],
-    '#description' => t('The default value of the field.') . ' ' . theme('webform_token_help'),
-  );
   $form['extra']['widget_type'] = array(
     '#type' => 'select',
     '#title' => t('Field Type'),
@@ -70,6 +58,12 @@ function _webform_edit_user_reference(array $component) {
     '#default_value' => $component['extra']['widget_type'],
     '#options' => array('select' => t('Select List'), 'checkbox_radio' => t('Checkbox/Radio'), 'autocomplete' => t('Autocomplete')),
     '#required' => TRUE,
+  );
+  $form['extra']['default_value'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Default value'),
+    '#default_value' => $component['extra']['default_value'],
+    '#description' => t('The default value of the field.') . ' ' . theme('webform_token_help'),
   );
   $form['extra']['empty_option'] = array(
     '#type' => 'textfield',
@@ -92,6 +86,71 @@ function _webform_edit_user_reference(array $component) {
       // Hide this field when the widget_type is autocomplete.
       'invisible' => array(
         ':input[name="extra[widget_type]"]' => array('value' => 'autocomplete'),
+      ),
+    ),
+  );
+  $form['extra']['use_view'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Use a view'),
+    '#default_value' => $component['extra']['use_view'],
+    '#description' => t('Use an entity reference view to select options.'),
+  );
+  if (!module_exists('entityreference')) {
+    $form['extra']['use_view']['#disabled'] = 'disabled';
+    $form['extra']['use_view']['#description'] = t('The entityreference module must be enabled to use this feature.');
+  }
+
+  $form['extra']['referenceable_types'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('User with roles that can be referenced'),
+    '#description' => t('If "authenticated user" is selected then all the users will be displayed.'),
+    '#multiple' => TRUE,
+    '#default_value' => $component['extra']['referenceable_types'],
+    '#options' => user_roles(TRUE),
+    '#element_validate' => array('_webform_references_user_roles_validate'),
+    '#states' => array(
+      'visible' => array(
+        ':input[name="extra[use_view]"]' => array('checked' => FALSE),
+      ),
+      'required' => array(
+        ':input[name="extra[use_view]"]' => array('checked' => FALSE),
+      )
+    ),
+  );
+  $displays = views_get_applicable_views('entityreference display');
+  // Filter views that list the entity type we want, and group the separate
+  // displays by view.
+  $options = array();
+  foreach ($displays as $data) {
+    list($view, $display_id) = $data;
+    if ($view->base_table == 'users') {
+        $options[$view->name . ':' . $display_id] = $view->name . ' - ' . $view->display[$display_id]->display_title;
+    }
+  }
+  $form['extra']['reference_view'] = array(
+    '#type' => 'select',
+    '#title' => t('Select a view'),
+    '#multiple' => FALSE,
+    '#default_value' => $component['extra']['reference_view'],
+    '#options' => $options,
+    '#element_validate' => array('_webform_references_user_reference_view_validate'),
+    '#states' => array(
+      'visible' => array(
+        ':input[name="extra[use_view]"]' => array('checked' => TRUE),
+      ),
+      'required' => array(
+        ':input[name="extra[use_view]"]' => array('checked' => TRUE),
+      )
+    ),
+  );
+  $form['extra']['view_args'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Arguments to pass to the view'),
+    '#description' => t('Arguments in the form arg1/arg2/arg3'),
+    '#default_value' => $component['extra']['view_args'],
+    '#states' => array(
+      'visible' => array(
+        ':input[name="extra[use_view]"]' => array('checked' => TRUE),
       ),
     ),
   );
@@ -133,6 +192,31 @@ function _webform_edit_user_reference(array $component) {
 }
 
 /**
+ * This is a workaround, because currently FAPI states 'required' only
+ * adds an asterisk but does not do validation. If we use the '#required'
+ * attribute on the element itself then validation will fail on the invisible
+ * referenceable type element
+ *
+ * @see _webform_edit_user_reference()
+ */
+function _webform_references_user_roles_validate($element, &$form_state) {
+  $use_view = $form_state['complete form']['extra']['use_view']['#value'];
+  if (!$use_view && empty($element['#value'])) {
+    form_set_error($element['#name'], t('Please select at least one role to be referenced.'));
+  }
+}
+
+/**
+ * To validate the reference view element in case of empty list.
+ */
+function _webform_references_user_reference_view_validate($element, &$form_state) {
+  $use_view = $form_state['complete form']['extra']['use_view']['#value'];
+  if ($use_view && empty($element['#value'])) {
+    form_set_error($element['#name'], t('Please select any view to be referenced.'));
+  }
+}
+
+/**
  * Render a Webform component to be part of a form.
  *
  * @param array $component
@@ -153,9 +237,18 @@ function _webform_render_user_reference(array $component, array $value = NULL, $
   $default_value = array ($filter ? webform_replace_tokens($component['extra']['default_value']) : $component['extra']['default_value']);
   switch ($component['extra']['widget_type']) {
     case 'autocomplete':
+      if ($component['extra']['use_view']) {
+        $path = 'webform_references/view/autocomplete/user/' . str_replace(':', '/', $component['extra']['reference_view']);
+        if (!empty($component['extra']['view_args'])) {
+          $path .= '/' . $component['extra']['view_args'];
+        }
+      }
+      else {
+        $path = 'webform_references/user/autocomplete/' . implode('+', array_filter($component['extra']['referenceable_types']));
+      }
       $form_item = array(
         '#type' => 'textfield',
-        '#autocomplete_path' => 'webform_references/user/autocomplete/' . implode('+', array_filter($component['extra']['referenceable_types'])),
+        '#autocomplete_path' => $path,
         '#description' => $filter ? _webform_filter_descriptions($component['extra']['description']) : $component['extra']['description'],
         '#required'         => $component['required'] || $component['mandatory'],
         // Either one being true will could as required...
@@ -179,7 +272,12 @@ function _webform_render_user_reference(array $component, array $value = NULL, $
       break;
 
     case 'checkbox_radio':
-      $user_list = _webform_references_get_user_list($component['extra']['referenceable_types'], NULL, $component['extra']['sort']['sort_by'], $component['extra']['sort']['order']);
+      if (!$component['extra']['use_view']) {
+        $user_list = _webform_references_get_user_list($component['extra']['referenceable_types'], NULL, $component['extra']['sort']['sort_by'], $component['extra']['sort']['order']);
+      }
+      else {
+        $user_list = _webform_references_list_from_view($component['extra']['reference_view'], 'user', $component['extra']['view_args']);
+      }
       $form_item = array(
         '#type' => ($component['extra']['multiple']) ? 'checkboxes' : 'radios',
         '#description' => $filter ? _webform_filter_descriptions($component['extra']['description']) : $component['extra']['description'],
@@ -214,7 +312,12 @@ function _webform_render_user_reference(array $component, array $value = NULL, $
       break;
 
     default:
-      $user_list = _webform_references_get_user_list($component['extra']['referenceable_types'], NULL, $component['extra']['sort']['sort_by'], $component['extra']['sort']['order']);
+      if (!$component['extra']['use_view']) {
+        $user_list = _webform_references_get_user_list($component['extra']['referenceable_types'], NULL, $component['extra']['sort']['sort_by'], $component['extra']['sort']['order']);
+      }
+      else {
+        $user_list = _webform_references_list_from_view($component['extra']['reference_view'], 'user', $component['extra']['view_args']);
+      }
       $form_item = array(
         '#type' => 'select',
         '#description' => $filter ? _webform_filter_descriptions($component['extra']['description']) : $component['extra']['description'],

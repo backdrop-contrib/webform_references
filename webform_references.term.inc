@@ -26,7 +26,9 @@ function _webform_defaults_term_reference() {
       'widget_type' => '',
       'empty_option' => 'None',
       'multiple' => NULL,
-      'tree' => NULL,
+      'use_view' => FALSE,
+      'reference_view' => NULL,
+      'view_args' => NULL,
       'sort' => array('sort_by' => 'name', 'order' => 'ASC'),
     ),
   );
@@ -49,24 +51,6 @@ function _webform_defaults_term_reference() {
  */
 function _webform_edit_term_reference(array $component) {
   $form = array();
-  $voc_keys = array();
-  foreach (taxonomy_get_vocabularies() as $vid => $vocab) {
-    $voc_keys[$vid] = $vocab->name;
-  }
-  $form['extra']['referenceable_types'] = array(
-    '#type' => 'select',
-    '#title' => t('Select Vocabularies that can be referenced'),
-    '#multiple' => FALSE,
-    '#default_value' => $component['extra']['referenceable_types'],
-    '#options' => $voc_keys,
-    '#required' => TRUE,
-  );
-  $form['extra']['default_value'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Default value'),
-    '#default_value' => $component['extra']['default_value'],
-    '#description' => t('The default value of the field.') . ' ' . theme('webform_token_help'),
-  );
   $form['extra']['widget_type'] = array(
     '#type' => 'select',
     '#title' => t('Field Type'),
@@ -74,18 +58,6 @@ function _webform_edit_term_reference(array $component) {
     '#default_value' => $component['extra']['widget_type'],
     '#options' => array('select' => t('Select List'), 'checkbox_radio' => t('Checkbox/Radio'), 'autocomplete' => t('Autocomplete')),
     '#required' => TRUE,
-  );
-  $form['extra']['empty_option'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Empty Option'),
-    '#default_value' => $component['extra']['empty_option'],
-    '#description' => t('Empty option value for select list.'),
-    '#states' => array(
-      'visible' => array(
-        ':input[name="extra[widget_type]"]' => array('value' => 'select'),
-        ':input[name="extra[multiple]"]' => array('checked' => FALSE),
-      ),
-    ),
   );
   $form['extra']['multiple'] = array(
     '#type' => 'checkbox',
@@ -99,15 +71,89 @@ function _webform_edit_term_reference(array $component) {
       ),
     ),
   );
-  $form['extra']['tree'] = array(
+  $form['extra']['use_view'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Tree'),
-    '#default_value' => $component['extra']['tree'],
-    '#description' => t('Check this option to display tree structure for taxonomy terms.'),
+    '#title' => t('Use a view'),
+    '#default_value' => $component['extra']['use_view'],
+    '#description' => t('Use an entity reference view to select options.'),
+  );
+  if (!module_exists('entityreference')) {
+    $form['extra']['use_view']['#disabled'] = 'disabled';
+    $form['extra']['use_view']['#description'] = t('The entityreference module must be enabled to use this feature.');
+  }
+
+  $voc_keys = array();
+  foreach (taxonomy_get_vocabularies() as $vid => $vocab) {
+    $voc_keys[$vid] = $vocab->name;
+  }
+  $form['extra']['referenceable_types'] = array(
+    '#type' => 'select',
+    '#title' => t('Select the vocabulary that can be referenced'),
+    '#multiple' => FALSE,
+    '#default_value' => $component['extra']['referenceable_types'],
+    '#options' => $voc_keys,
+    '#element_validate' => array('_webform_references_taxonomy_vocabularies_validate'),
     '#states' => array(
-      // Display this field when the widget_type is select list.
+      'invisible' => array(
+        ':input[name="extra[use_view]"]' => array('checked' => TRUE),
+      ),
+      'required' => array(
+        ':input[name="extra[use_view]"]' => array('checked' => FALSE),
+      )
+    ),
+  );
+  $displays = views_get_applicable_views('entityreference display');
+  // Filter views that list the entity type we want, and group the separate
+  // displays by view.
+  $options = array();
+  foreach ($displays as $data) {
+    list($view, $display_id) = $data;
+    if ($view->base_table == 'taxonomy_term_data') {
+        $options[$view->name . ':' . $display_id] = $view->name . ' - ' . $view->display[$display_id]->display_title;
+    }
+  }
+  $form['extra']['reference_view'] = array(
+    '#type' => 'select',
+    '#title' => t('Select a view'),
+    '#multiple' => FALSE,
+    '#default_value' => $component['extra']['reference_view'],
+    '#options' => $options,
+    '#element_validate' => array('_webform_references_taxonomy_reference_view_validate'),
+    '#states' => array(
+      'visible' => array(
+        ':input[name="extra[use_view]"]' => array('checked' => TRUE),
+      ),
+      'required' => array(
+        ':input[name="extra[use_view]"]' => array('checked' => TRUE),
+      )
+    ),
+  );
+  $form['extra']['view_args'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Arguments to pass to the view'),
+    '#description' => t('Arguments in the form arg1/arg2/arg3'),
+    '#default_value' => $component['extra']['view_args'],
+    '#states' => array(
+      'visible' => array(
+        ':input[name="extra[use_view]"]' => array('checked' => TRUE),
+      ),
+    ),
+  );
+  $form['extra']['default_value'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Default value'),
+    '#default_value' => $component['extra']['default_value'],
+    '#description' => t('The default value of the field.') . ' ' . theme('webform_token_help'),
+  );
+  $form['extra']['empty_option'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Empty Option'),
+    '#default_value' => $component['extra']['empty_option'],
+    '#description' => t('Empty option value for select list.'),
+    '#states' => array(
       'visible' => array(
         ':input[name="extra[widget_type]"]' => array('value' => 'select'),
+        ':input[name="extra[multiple]"]' => array('checked' => FALSE),
       ),
     ),
   );
@@ -115,6 +161,11 @@ function _webform_edit_term_reference(array $component) {
     '#type' => 'container',
     '#attributes' => array(
       'class' => array('container-inline'),
+    ),
+    '#states' => array(
+      'invisible' => array(
+        ':input[name="extra[use_view]"]' => array('checked' => TRUE),
+      ),
     ),
   );
   $form['extra']['sort']['sort_by'] = array(
@@ -149,6 +200,31 @@ function _webform_edit_term_reference(array $component) {
 }
 
 /**
+ * This is a workaround, because currently FAPI states 'required' only
+ * adds an asterisk but does not do validation. If we use the '#required'
+ * attribute on the element itself then validation will fail on the invisible
+ * referenceable type element
+ *
+ * @see _webform_edit_user_reference()
+ */
+function _webform_references_taxonomy_vocabularies_validate($element, &$form_state) {
+  $use_view = $form_state['complete form']['extra']['use_view']['#value'];
+  if (!$use_view && empty($element['#value'])) {
+    form_set_error($element['#name'], t('Please select any vocabulary to be referenced.'));
+  }
+}
+
+/**
+ * To validate the reference view element in case of empty list.
+ */
+function _webform_references_taxonomy_reference_view_validate($element, &$form_state) {
+  $use_view = $form_state['complete form']['extra']['use_view']['#value'];
+  if ($use_view && empty($element['#value'])) {
+    form_set_error($element['#name'], t('Please select any view to be referenced.'));
+  }
+}
+
+/**
  * Render a Webform component to be part of a form.
  *
  * @param array $component
@@ -169,9 +245,18 @@ function _webform_render_term_reference(array $component, array $value = NULL, $
   $default_value = array ($filter ? webform_replace_tokens($component['extra']['default_value']) : $component['extra']['default_value']);
   switch ($component['extra']['widget_type']) {
     case 'autocomplete':
+      if (!empty($component['extra']['use_view'])) {
+        $path = 'webform_references/view/autocomplete/taxonomy_term/' . str_replace(':', '/', $component['extra']['reference_view']);
+        if (!empty($component['extra']['view_args'])) {
+          $path .= '/' . $component['extra']['view_args'];
+        }
+      }
+      else {
+        $path = 'webform_references/term/autocomplete/' . $component['extra']['referenceable_types'];
+      }
       $form_item = array(
         '#type' => 'textfield',
-        '#autocomplete_path' => 'webform_references/term/autocomplete/' . $component['extra']['referenceable_types'],
+        '#autocomplete_path' => $path,
         '#description' => $filter ? _webform_filter_descriptions($component['extra']['description']) : $component['extra']['description'],
         '#required'         => $component['required'] || $component['mandatory'],
         // Either one being true will could as required...
@@ -195,7 +280,12 @@ function _webform_render_term_reference(array $component, array $value = NULL, $
       break;
 
     case 'checkbox_radio':
-      $term_list = _webform_references_get_term_list($component['extra']['referenceable_types'], $component['extra']['sort']['sort_by'], $component['extra']['sort']['order']);
+      if (!$component['extra']['use_view']) {
+        $term_list = _webform_references_get_term_list($component['extra']['referenceable_types'], $component['extra']['sort']['sort_by'], $component['extra']['sort']['order']);
+      }
+      else {
+        $term_list = _webform_references_list_from_view($component['extra']['reference_view'], 'taxonomy_term', $component['extra']['view_args']);
+      }
       $form_item = array(
         '#type' => ($component['extra']['multiple']) ? 'checkboxes' : 'radios',
         '#description' => $filter ? _webform_filter_descriptions($component['extra']['description']) : $component['extra']['description'],
@@ -230,7 +320,12 @@ function _webform_render_term_reference(array $component, array $value = NULL, $
       break;
 
     default:
-      $term_list = _webform_references_get_term_list($component['extra']['referenceable_types'], $component['extra']['sort']['sort_by'], $component['extra']['sort']['order'], $component['extra']['tree']);
+      if (!$component['extra']['use_view']) {
+        $term_list = _webform_references_get_term_list($component['extra']['referenceable_types'], $component['extra']['sort']['sort_by'], $component['extra']['sort']['order']);
+      }
+      else {
+        $term_list = _webform_references_list_from_view($component['extra']['reference_view'], 'taxonomy_term', $component['extra']['view_args']);
+      }
       $form_item = array(
         '#type' => 'select',
         '#description' => $filter ? _webform_filter_descriptions($component['extra']['description']) : $component['extra']['description'],
@@ -261,11 +356,24 @@ function _webform_render_term_reference(array $component, array $value = NULL, $
  * Validation Callback for term reference field.
  */
 function webform_references_validate_term_reference($element, $form_state) {
-  $term_name = $element['#value'];
-  if ($term_name != '') {
-    $vid = $element['#webform_component']['extra']['referenceable_types'];
-    $tid = _webform_references_get_term_tid($term_name, $vid);
-    if (!$tid) {
+  $value = $element['#value'];
+  $tid = NULL;
+  if (!empty($value)) {
+    preg_match('/^(?:\s*|(.*) )?\[\s*id\s*:\s*(\d+)\s*\]$/', $value, $matches);
+    if (!empty($matches)) {
+      list(, $name, $tid) = $matches;
+      if (!empty($name)) {
+        $real_name = db_select('taxonomy_term_data', 't')
+          ->fields('t', array('name'))
+          ->condition('t.tid', $tid)
+          ->execute()
+          ->fetchField();
+        if (trim($name) != trim($real_name)) {
+          form_error($element, t('Please check your selection.'));
+        }
+      }
+    }
+    else {
       form_error($element, t('Please check your selection.'));
     }
   }
@@ -287,8 +395,11 @@ function webform_references_validate_term_reference($element, $form_state) {
  */
 function _webform_submit_term_reference(array $component, $value) {
   if ($component['extra']['widget_type'] == 'autocomplete') {
-    $vid = $component['extra']['referenceable_types'];
-    $value = _webform_references_get_term_tid($value, $vid);
+    preg_match('/^(?:\s*|(.*) )?\[\s*id\s*:\s*(\d+)\s*\]$/', $value, $matches);
+    if (!empty($matches)) {
+      list(, , $tid) = $matches;
+      $value = $tid;
+    }
   }
   return $value;
 }
@@ -454,13 +565,14 @@ function webform_references_term_autocomplete($vid, $string = '') {
   $references = array();
   foreach ($result as $term) {
     $references[] = array(
+      'id' => $term->tid,
       'name' => $term->term_name,
     );
   }
 
   $matches = array();
   foreach ($references as $row) {
-    $matches[$name] = check_plain($row['name']);
+    $matches[$row['name'] . " [id:" . $row['id'] . "]"] = check_plain($row['name']);
   }
   drupal_json_output($matches);
 }
