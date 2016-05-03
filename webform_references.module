@@ -142,7 +142,7 @@ function webform_references_execute_view($view_name, $display_name, $entity_type
   $view = views_get_view($view_name);
   if (!$view || !isset($view->display[$display_name]) || !$view->access($display_name)) {
     watchdog('entityreference', 'The view %view_name is no longer eligible.', array('%view_name' => $view_name), WATCHDOG_WARNING);
-    return FALSE;
+    return array();
   }
 
   $view->set_display($display_name);
