@@ -446,7 +446,6 @@ function _webform_display_term_reference(array $component, $value, $format = 'ht
     '#weight'         => $component['weight'],
     '#theme'          => 'webform_display_term_reference_field',
     '#theme_wrappers' => $format == 'html' ? array('webform_element') : array('webform_element_text'),
-    '#post_render'    => array('webform_element_wrapper'),
     '#component'      => $component,
     '#format'         => $format,
     '#value'          => array_filter($value),
@@ -574,7 +573,7 @@ function webform_references_term_autocomplete($vid, $string = '') {
   foreach ($references as $row) {
     $matches[$row['name'] . " [id:" . $row['id'] . "]"] = check_plain($row['name']);
   }
-  drupal_json_output($matches);
+  backdrop_json_output($matches);
 }
 
 /**

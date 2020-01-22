@@ -438,7 +438,6 @@ function _webform_display_user_reference(array $component, $value, $format = 'ht
     '#weight'         => $component['weight'],
     '#theme'          => 'webform_display_user_reference_field',
     '#theme_wrappers' => $format == 'html' ? array('webform_element') : array('webform_element_text'),
-    '#post_render'    => array('webform_element_wrapper'),
     '#component'      => $component,
     '#format'         => $format,
     '#value'          => array_filter($value),
@@ -564,7 +563,7 @@ function webform_references_user_autocomplete($bundles, $string = '') {
   foreach ($references as $id => $name) {
     $matches[$name . " [id:$id]"] = check_plain($name);
   }
-  drupal_json_output($matches);
+  backdrop_json_output($matches);
 }
 
 /**

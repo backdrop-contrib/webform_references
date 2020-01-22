@@ -1,6 +1,7 @@
 name = Webform References
 description = Defines a webform component type for referencing the node/term/user.
 package = Webform
-core = 7.x
+backdrop = 1.x
+type = module
 
 dependencies[] = webform

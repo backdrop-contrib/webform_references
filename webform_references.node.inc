@@ -463,7 +463,6 @@ function _webform_display_node_reference(array $component, $value, $format = 'ht
     '#weight'         => $component['weight'],
     '#theme'          => 'webform_display_node_reference_field',
     '#theme_wrappers' => $format == 'html' ? array('webform_element') : array('webform_element_text'),
-    '#post_render'    => array('webform_element_wrapper'),
     '#component'      => $component,
     '#format'         => $format,
     '#value'          => array_filter($value),
@@ -588,7 +587,7 @@ function webform_references_node_autocomplete($bundles, $string = '') {
     // Add a class wrapper for a few required CSS overrides.
     $matches[$row['title'] . " [id:$id]"] = check_plain($suggestion);
   }
-  drupal_json_output($matches);
+  backdrop_json_output($matches);
 }
 
 /**
@@ -619,7 +618,7 @@ function webform_references_node_potential_references($bundles, $options = array
     'ids' => array(),
     'limit' => 0,
   );
-  $results = &drupal_static(__FUNCTION__, array());
+  $results = &backdrop_static(__FUNCTION__, array());
   // Create unique id for static cache.
   $cid = ($options['string'] !== '' ? $options['string'] : implode('-', $options['ids']))
     . ':' . $options['limit'];
