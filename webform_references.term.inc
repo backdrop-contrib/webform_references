@@ -208,7 +208,7 @@ function _webform_edit_term_reference(array $component) {
  * @see _webform_edit_user_reference()
  */
 function _webform_references_taxonomy_vocabularies_validate($element, &$form_state) {
-  $use_view = $form_state['complete form']['extra']['use_view']['#value'];
+  $use_view = $form_state['complete_form']['extra']['use_view']['#value'];
   if (!$use_view && empty($element['#value'])) {
     form_set_error($element['#name'], t('Please select any vocabulary to be referenced.'));
   }
@@ -218,7 +218,7 @@ function _webform_references_taxonomy_vocabularies_validate($element, &$form_sta
  * To validate the reference view element in case of empty list.
  */
 function _webform_references_taxonomy_reference_view_validate($element, &$form_state) {
-  $use_view = $form_state['complete form']['extra']['use_view']['#value'];
+  $use_view = $form_state['complete_form']['extra']['use_view']['#value'];
   if ($use_view && empty($element['#value'])) {
     form_set_error($element['#name'], t('Please select any view to be referenced.'));
   }
