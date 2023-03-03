@@ -200,7 +200,7 @@ function _webform_edit_node_reference(array $component) {
  * @see _webform_edit_node_reference()
  */
 function _webform_reference_node_types_validate($element, &$form_state) {
-  $use_view = $form_state['complete form']['extra']['use_view']['#value'];
+  $use_view = $form_state['complete_form']['extra']['use_view']['#value'];
   if (!$use_view && empty($element['#value'])) {
     form_set_error($element['#name'], t('Please select at least one content type to be referenced.'));
   }
@@ -210,7 +210,7 @@ function _webform_reference_node_types_validate($element, &$form_state) {
  * To validate the reference view element in case of empty list.
  */
 function _webform_references_node_reference_view_validate($element, &$form_state) {
-  $use_view = $form_state['complete form']['extra']['use_view']['#value'];
+  $use_view = $form_state['complete_form']['extra']['use_view']['#value'];
   if ($use_view && empty($element['#value'])) {
     form_set_error($element['#name'], t('Please select any view to be referenced.'));
   }
