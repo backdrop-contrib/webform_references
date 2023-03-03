@@ -300,7 +300,7 @@ function _webform_render_term_reference(array $component, array $value = NULL, $
         '#pre_render' => array(),
         '#translatable' => array('title', 'description'),
       );
-      $form_item['#theme_wrappers'] = array($form_item['#type'], 'webform_element');
+      $form_item['#theme_wrappers'] = array('webform_element');
       if (isset($value)) {
         if ($form_item['#type'] == 'checkboxes') {
           $form_item['#default_value'] = $value;
